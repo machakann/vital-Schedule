@@ -1,5 +1,9 @@
 # vital-Schedule
 
+[![Build Status](https://travis-ci.org/machakann/vital-Schedule.svg)](https://travis-ci.org/machakann/vital-Schedule)
+[![Build status](https://ci.appveyor.com/api/projects/status/dyjxcv4q9n26v0ep?svg=true)](https://ci.appveyor.com/project/machakann/vital-schedule)
+
+
 Handling tasks.
 
 # Motivation
