@@ -391,14 +391,16 @@ If the task is no longer needed, use |Vital.Schedule-EventTask.cancel()|. >
 <
 
 					*Vital.Schedule-EventTask.waitfor()*
-EventTask.waitfor({name}[, {pat}])    [method]
-	This method sets the task itself to an autocmd event. {name} should be
-	an autocmd event name, see |autocmd-events|. An `EventTask` object can
+EventTask.waitfor({event})    [method]
+	This method sets the task itself to an autocmd event. {event} should
+	be an autocmd event, see |autocmd-events|. An `EventTask` object can
 	be bound to only one event. If you need multiple triggers, use number
 	of `EventTask` objects or |Vital.Schedule-RaceTask|.
 
-	{pat} is same as that of |:autocmd|, see |autocmd-patterns| and
-	|autocmd-buflocal|. It will be "*" if omitted.
+	If {event} is a |String|, "*" is used for|autocmd-patterns|.
+	If you want to set another pattern, assign a |List| like
+	[{eventname}, {pat}]; for example, task.waitfor(['BufRead', '*.txt']).
+	See |autocmd-patterns| and |autocmd-buflocal|.
 
 	If you have achieved the purpose of the task, you can
 	stop the task by calling |Vital.Schedule-EventTask.cancel()|. >
@@ -638,20 +640,25 @@ can be changed by |Vital.Schedule-RaceTask.repeat()|.
 
 
 					*Vital.Schedule-RaceTask.waitfor()*
-RaceTask.waitfor({triggerlist}[, {pat}])    [method]
+RaceTask.waitfor({triggerlist})    [method]
 	This method starts to wait for an auto-trigger. {triggerlist} is a
-	list of trigger names. If one of the item is |String|, it is regarded
-	as an autocmd event, see |autocmd-events|. If it is |Number|, it is
-	regarded as an delay time. >
+	list of trigger names. The trigger name could be one of the following
+	types.
+
+	  * |String|: Regarded as an {event} |autocmd-events|, "*" is applied
+	              for {pat} |autocmd-patterns|
+	  * |List|  : Regarded as an |autocmd-events| and a |autocmd-patterns|
+	              like [{event}, {pat}]
+	  * |Number|: Regarded as a waiting {time} for a timer |timer|
+>
 		let s:Schedule = vital#{pluginname}#new().import('Schedule')
 		let task = s:Schedule.RaceTask().execute('echo "foo"')
-		call task.waitfor(['TextChanged', 100])
+		call task.waitfor(['TextChanged', ['InsertEnter', '*'], 100])
 <
-	This method returns the task object itself.
+	Check |Vital.Schedule-EventTask.waitfor()| and
+	|Vital.Schedule-TimerTask.waitfor()| also.
 
-	{pat} is same as that of |:autocmd|, see |autocmd-patterns| and
-	|autocmd-buflocal|. It will be "*" if omitted. If {triggerlist} does
-	not include any event, {pat} is ignored.
+	This method returns the task object itself.
 
 
 					*Vital.Schedule-RaceTask.cancel()*
@@ -750,15 +757,20 @@ cursor. You can write shorter: >
 <
 
 					*Vital.Schedule-TaskChain.event()*
-TaskChain.event({event}[, {pat}])    [method]
-	This method registers a task to the autocmd event. {event} should be
-	a name of autocmd event. |autocmd-events| This method returns a
-	`NeatTask` object bound to the autocmd event. Its number of execution
-	is set as 1 in default >
+TaskChain.event({event})    [method]
+	This method registers a task to the autocmd event.
+
+	If {event} is a |String|, "*" is used for|autocmd-patterns|.
+	If you want to set another pattern, assign a |List| like
+	[{eventname}, {pat}]; for example, task.waitfor(['BufRead', '*.txt']).
+	See |autocmd-patterns| and |autocmd-buflocal|.
+
+	This method returns a `NeatTask` object bound to the autocmd event.
+	Its number of execution is set as 1 in default >
 		let s:Schedule = vital#{pluginname}#new().import('Schedule')
 		let taskchain = s:Schedule.TaskChain()
 		let task1 = taskchain.event('InsertEnter')
-		let task2 = taskchain.event('CursorMoved')
+		let task2 = taskchain.event(['CursorMoved', '*'])
 		call task1.execute('echo "InsertEnter"')
 		call task2.execute('echo "CursorMoved"')
 		call taskchain.waitfor()
@@ -767,9 +779,7 @@ TaskChain.event({event}[, {pat}])    [method]
 	wait for |CursorMovedI| event to echo "CursorMovedI".
 	|Vital.Schedule-NeatTask|
 	|Vital.Schedule-NeatTask.repeat()|
-
-	{pat} is same as that of |:autocmd|, see |autocmd-patterns| and
-	|autocmd-buflocal|. It will be "*" if omitted.
+	|Vital.Schedule-EventTask.waitfor()|
 
 
 					*Vital.Schedule-TaskChain.timer()*
@@ -792,14 +802,19 @@ TaskChain.timer({time})    [method]
 
 
 					*Vital.Schedule-TaskChain.race()*
-TaskChain.race({triggerlist}[, {pat}])    [method]
+TaskChain.race({triggerlist})    [method]
 	This method registers a multiple-triggered task. {triggers} is a list
-	of trigger names. If one of the item is |String|, it is regarded as an
-	autocmd event. If it is |Number|, it is regarded as an delay time.
+	of trigger names. The trigger name could be one of the following
+	types.
+
+	  * |String|: Regarded as an {event} |autocmd-events|, "*" is applied
+	              for {pat} |autocmd-patterns|
+	  * |List|  : Regarded as an |autocmd-events| and a |autocmd-patterns|
+	              like [{event}, {pat}]
+	  * |Number|: Regarded as a waiting {time} for a timer |timer|
+
 	This method returns a `NeatTask` object to be called by either one of
-	those triggers. Its number of execution is set as 1 in default.
-	Note that if {triggerlist} does not contain any valid trigger item,
-	this method returns an empty dictionary. >
+	those triggers. Its number of execution is set as 1 in default. >
 		let s:Schedule = vital#{pluginname}#new().import('Schedule')
 		let taskchain = s:Schedule.TaskChain()
 		let task1 = taskchain.event('CmdwinLeave')
@@ -811,10 +826,9 @@ TaskChain.race({triggerlist}[, {pat}])    [method]
 	buffer" if you move cursor or wait for 1 second.
 	|Vital.Schedule-NeatTask|
 	|Vital.Schedule-NeatTask.repeat()|
-
-	{pat} is same as that of |:autocmd|, see |autocmd-patterns| and
-	|autocmd-buflocal|. It will be "*" if omitted. If {triggerlist} does
-	not include any event, {pat} is ignored.
+	|Vital.Schedule-EventTask.waitfor()|
+	|Vital.Schedule-TimerTask.waitfor()|
+	|Vital.Schedule-RaceTask.waitfor()|
 
 
 					*Vital.Schedule-TaskChain.trigger()*

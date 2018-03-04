@@ -375,7 +375,7 @@ Describe EventTask
       call eventtask.execute('let g:count += 1').repeat(3).skip(1)
 
       Assert False(exists('#vital-Schedule#User#TestEvent'))
-      call eventtask.waitfor('User', 'TestEvent')
+      call eventtask.waitfor(['User', 'TestEvent'])
       Assert True(exists('#vital-Schedule#User#TestEvent'))
 
       doautocmd <nomodeline> User TestEvent
@@ -419,7 +419,7 @@ Describe RaceTask
 
       Assert False(exists('#vital-Schedule#WinEnter'))
       Assert False(exists('#vital-Schedule#WinLeave'))
-      call racetask.waitfor(['WinEnter', 'WinLeave', 100])
+      call racetask.waitfor(['WinEnter', ['WinLeave', '*'], 100])
       Assert True(exists('#vital-Schedule#WinEnter'))
       Assert True(exists('#vital-Schedule#WinLeave'))
 
@@ -442,6 +442,7 @@ Describe RaceTask
 
       sleep 100m
       Assert Equals(g:count, 3)
+      Assert True(racetask.hasdone())
       Assert Empty(timer_info(id))
 
       doautocmd <nomodeline> vital-Schedule WinEnter

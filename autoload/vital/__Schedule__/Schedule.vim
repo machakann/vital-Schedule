@@ -410,24 +410,24 @@ function! s:EventTask.clone() abort "{{{
   return clone
 endfunction "}}}
 
-function! s:EventTask.waitfor(event, ...) abort "{{{
-  let self._event = a:event
-  let self._pat = get(a:000, 0, '*')
+function! s:EventTask.waitfor(eventexpr) abort "{{{
+  let [event, pat] = s:event_and_patterns(a:eventexpr)
   call self.cancel().repeat()
   if self.leftcount() == 0
     return self
   endif
 
   let self._state = s:ON
-  let pat = self._pat
-  if !has_key(s:eventtable, a:event)
-    let s:eventtable[a:event] = {}
+  let self._event = event
+  let self._pat = pat
+  if !has_key(s:eventtable, event)
+    let s:eventtable[event] = {}
   endif
-  if !has_key(s:eventtable[a:event], pat)
-    let s:eventtable[a:event][pat] = []
-    call s:_autocmd(a:event, pat)
+  if !has_key(s:eventtable[event], pat)
+    let s:eventtable[event][pat] = []
+    call s:_autocmd(event, pat)
   endif
-  call add(s:eventtable[a:event][pat], self)
+  call add(s:eventtable[event][pat], self)
   let self._state = s:ON
   return self
 endfunction "}}}
@@ -508,8 +508,7 @@ function! s:RaceTask.clone() abort "{{{
   return clone
 endfunction "}}}
 
-function! s:RaceTask.waitfor(triggerlist, ...) abort "{{{
-  let self._pat = get(a:000, 0, '*')
+function! s:RaceTask.waitfor(triggerlist) abort "{{{
   call self.cancel().repeat()
   let invalid = s:invalid_triggerlist(a:triggerlist)
   if !empty(invalid)
@@ -517,33 +516,37 @@ function! s:RaceTask.waitfor(triggerlist, ...) abort "{{{
   endif
 
   let self._state = s:ON
-  let pat = self._pat
-  let events = filter(copy(a:triggerlist), 'type(v:val) is v:t_string')
+  let events = filter(copy(a:triggerlist), 'type(v:val) is v:t_string || type(v:val) is v:t_list')
   call uniq(sort(events))
-  for eventname in events
-    let eventtask = self._event(eventname)
-    call eventtask.waitfor(eventname, pat)
+  for eventexpr in events
+    let eventtask = self._event(eventexpr)
+    call eventtask.waitfor(eventexpr)
   endfor
 
   let times = filter(copy(a:triggerlist), 'type(v:val) is v:t_number')
-  let time = min(filter(times, 'v:val > 0'))
-  let timertask = self._timer()
-  call timertask.waitfor(time)
+  call filter(times, 'v:val > 0')
+  if !empty(times)
+    let time = min(times)
+    let timertask = self._timer()
+    call timertask.waitfor(time)
+  endif
   return self
 endfunction "}}}
 
 function! s:RaceTask.cancel() abort "{{{
   let self._state = s:OFF
   if !empty(self.__racetask__.Event)
-    for [event, task] in items(self.__racetask__.Event)
-      call task.cancel()
-      call remove(self.__racetask__.Event, event)
+    for [event, eventdict] in items(self.__racetask__.Event)
+      for [pat, task] in items(eventdict)
+        call task.cancel()
+      endfor
     endfor
+    call filter(self.__racetask__.Event, 0)
   endif
   if !empty(self.__racetask__.Timer)
-    let timer = self.__racetask__.Timer
-    call timer.cancel()
-    let self.__racetask__.Timer = {}
+    let task = self.__racetask__.Timer
+    call task.cancel()
+    call filter(self.__racetask__.Timer, 0)
   endif
   return self
 endfunction "}}}
@@ -552,24 +555,31 @@ function! s:RaceTask.isactive() abort "{{{
   return self._state && s:super(self, 'Switch')._isactive()
 endfunction "}}}
 
-function! s:RaceTask._event(event) abort "{{{
-  if has_key(self.__racetask__.Event, a:event)
-    return self.__racetask__.Event[a:event]
+function! s:RaceTask._event(eventexpr) abort "{{{
+  let [event, pat] = s:event_and_patterns(a:eventexpr)
+  if has_key(self.__racetask__.Event, event)
+    if has_key(self.__racetask__.Event[event], pat)
+      return self.__racetask__.Event[event][pat]
+    endif
+  else
+    let self.__racetask__.Event[event] = {}
   endif
-  let event = s:EventTask()
-  call event.call(self.trigger, [], self).repeat(-1)
-  let self.__racetask__.Event[a:event] = event
-  return event
+
+  let task = s:EventTask()
+  call task.call(self.trigger, [], self).repeat(-1)
+  let self.__racetask__.Event[event][pat] = task
+  return task
 endfunction "}}}
 
 function! s:RaceTask._timer() abort "{{{
   if !empty(self.__racetask__.Timer)
     return self.__racetask__.Timer
   endif
-  let timer = s:TimerTask()
-  call timer.call(self.trigger, [], self).repeat(-1)
-  let self.__racetask__.Timer = timer
-  return timer
+
+  let task = s:TimerTask()
+  call task.call(self.trigger, [], self).repeat(-1)
+  let self.__racetask__.Timer = task
+  return task
 endfunction "}}}
 
 function! s:RaceTask._getid() abort "{{{
@@ -599,13 +609,10 @@ function! s:TaskChain() abort "{{{
   return s:inherit(taskchain, counter)
 endfunction "}}}
 
-function! s:TaskChain.event(event, ...) abort "{{{
+function! s:TaskChain.event(event) abort "{{{
   let eventtask = s:EventTask()
   let ordertask = s:NeatTask()
   let args = [a:event]
-  if a:0 > 1
-    let args += [a:1]
-  endif
   call self._settrigger(eventtask, args)
   call self._setorder(ordertask)
   return ordertask
@@ -619,7 +626,7 @@ function! s:TaskChain.timer(time) abort "{{{
   return ordertask
 endfunction "}}}
 
-function! s:TaskChain.race(triggerlist, ...) abort "{{{
+function! s:TaskChain.race(triggerlist) abort "{{{
   let invalid = s:invalid_triggerlist(a:triggerlist)
   if !empty(invalid)
     echoerr s:InvalidTriggers(invalid)
@@ -628,9 +635,6 @@ function! s:TaskChain.race(triggerlist, ...) abort "{{{
   let racetask = s:RaceTask()
   let ordertask = s:NeatTask()
   let args = [a:triggerlist]
-  if a:0 > 1
-    let args += [a:1]
-  endif
   call self._settrigger(racetask, args)
   call self._setorder(ordertask)
   return ordertask
@@ -705,9 +709,30 @@ lockvar! s:TaskChain
 
 
 
+function! s:event_and_patterns(eventexpr) abort "{{{
+  let t_event = type(a:eventexpr)
+  if t_event is v:t_string
+    let event = a:eventexpr
+    let pat = '*'
+  elseif t_event is v:t_list
+    let event = a:eventexpr[0]
+    let pat = get(a:eventexpr, 1, '*')
+  else
+    echoerr s:InvalidTriggers(a:eventexpr)
+  endif
+  return [event, pat]
+endfunction "}}}
+
 function! s:invalid_triggerlist(triggerlist) abort "{{{
-  return filter(copy(a:triggerlist),
-    \ 'type(v:val) isnot v:t_string && type(v:val) isnot v:t_number')
+  return filter(copy(a:triggerlist), '!s:isvalidtriggertype(v:val)')
+endfunction "}}}
+
+function! s:isvalidtriggertype(item) abort "{{{
+  let t_trigger = type(a:item)
+  if t_trigger is v:t_string || t_trigger is v:t_list || t_trigger is v:t_number
+    return s:TRUE
+  endif
+  return s:FALSE
 endfunction "}}}
 
 " vim:set foldmethod=marker:
