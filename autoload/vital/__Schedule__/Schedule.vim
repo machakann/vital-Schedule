@@ -546,7 +546,7 @@ function! s:RaceTask.cancel() abort "{{{
   if !empty(self.__racetask__.Timer)
     let task = self.__racetask__.Timer
     call task.cancel()
-    call filter(self.__racetask__.Timer, 0)
+    let self.__racetask__.Timer = {}
   endif
   return self
 endfunction "}}}
