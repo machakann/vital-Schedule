@@ -328,11 +328,8 @@ Describe EventTask
 
   Context instance
     It is triggered by an autocmd event
-      augroup vital-Schedule
-        autocmd!
-      augroup END
       let g:count = 0
-      let eventtask = EventTask()
+      let eventtask = EventTask('vital-Schedule')
 
       call eventtask.execute('let g:count += 1').repeat(3).skip(1)
 
@@ -366,11 +363,8 @@ Describe EventTask
     End
 
     It is triggered by an User autocmd event
-      augroup vital-Schedule
-        autocmd!
-      augroup END
       let g:count = 0
-      let eventtask = EventTask()
+      let eventtask = EventTask('vital-Schedule')
 
       call eventtask.execute('let g:count += 1').repeat(3).skip(1)
 
@@ -409,11 +403,8 @@ Describe RaceTask
 
   Context instance
     It is triggered by any one of given triggers
-      augroup vital-Schedule
-        autocmd!
-      augroup END
       let g:count = 0
-      let racetask = RaceTask()
+      let racetask = RaceTask('vital-Schedule')
 
       call racetask.execute('let g:count += 1').repeat(3).skip(1)
 
@@ -463,12 +454,9 @@ Describe TaskChain
 
   Context instance
     It is triggered by any one of given triggers
-      augroup vital-Schedule
-        autocmd!
-      augroup END
       let g:count = 0
 
-      let taskchain = TaskChain()
+      let taskchain = TaskChain('vital-Schedule')
       call taskchain.event('WinEnter')
       call taskchain.event('WinLeave').execute('let g:count += 1')
       call taskchain.timer(100).execute('let g:count += 1')

@@ -4,12 +4,7 @@ let s:TRUE = 1
 let s:FALSE = 0
 let s:ON = 1
 let s:OFF = 0
-
-let s:timertable = {}
-let s:eventtable = {}
-augroup vital-Schedule
-  autocmd!
-augroup END
+let s:DEFAULTAUGROUP = 'vital-Schedule'
 
 " Class system {{{
 function! s:inherit(sub, super, ...) abort "{{{
@@ -87,6 +82,117 @@ endfunction "}}}
 function! s:InvalidTriggers(triggerlist) abort "{{{
   return printf('vital-Schedule:E1: Invalid triggers, %s',
               \ string(a:triggerlist))
+endfunction "}}}
+"}}}
+
+
+
+" Event class {{{
+let s:Event = {
+  \   'table': {},
+  \ }
+
+function! s:Event.add(task) abort "{{{
+  let augroup = a:task._augroup
+  let event = a:task._event
+  let pat = a:task._pat
+  if !has_key(self.table, augroup)
+    let self.table[augroup] = {}
+  endif
+  if !has_key(self.table[augroup], event)
+    let self.table[augroup][event] = {}
+  endif
+  if !has_key(self.table[augroup][event], pat)
+    let self.table[augroup][event][pat] = []
+    call s:_autocmd(augroup, event, pat)
+  endif
+  call add(self.table[augroup][event][pat], a:task)
+endfunction "}}}
+
+function! s:Event.remove(task) abort "{{{
+  let augroup = a:task._augroup
+  let event = a:task._event
+  let pat = a:task._pat
+  if !has_key(s:Event.table, augroup) || !has_key(s:Event.table[augroup], event)
+      \ || !has_key(s:Event.table[augroup][event], pat)
+    return
+  endif
+
+  call filter(self.table[augroup][event][pat], 'v:val isnot a:task')
+  call s:_sweep(augroup, event, pat)
+endfunction "}}}
+
+function! s:_autocmd(augroup, event, pat) abort "{{{
+  let autocmd = printf("autocmd %s %s call s:_doautocmd('%s', '%s', '%s')",
+                      \ a:event, a:pat, a:augroup, a:event, a:pat)
+
+  execute 'augroup ' . a:augroup
+    execute autocmd
+  augroup END
+endfunction "}}}
+
+function! s:_doautocmd(augroup, event, pat) abort "{{{
+  if !has_key(s:Event.table, a:augroup) || !has_key(s:Event.table[a:augroup], a:event)
+      \ || !has_key(s:Event.table[a:augroup][a:event], a:pat)
+    return
+  endif
+
+  for task in s:Event.table[a:augroup][a:event][a:pat]
+    call task.trigger()
+  endfor
+  call s:_sweep(a:augroup, a:event, a:pat)
+endfunction "}}}
+
+function! s:_sweep(augroup, event, pat) abort "{{{
+  if !has_key(s:Event.table, a:augroup) || !has_key(s:Event.table[a:augroup], a:event)
+      \ || !has_key(s:Event.table[a:augroup][a:event], a:pat)
+    return
+  endif
+
+  call filter(s:Event.table[a:augroup][a:event][a:pat], '!v:val.hasdone()')
+  if empty(s:Event.table[a:augroup][a:event][a:pat])
+    execute printf('autocmd! %s %s %s', a:augroup, a:event, a:pat)
+    call remove(s:Event.table[a:augroup][a:event], a:pat)
+  endif
+  if empty(s:Event.table[a:augroup][a:event])
+    call remove(s:Event.table[a:augroup], a:event)
+  endif
+  if empty(s:Event.table[a:augroup])
+    call remove(s:Event.table, a:augroup)
+  endif
+endfunction "}}}
+"}}}
+
+
+
+" Timer class {{{
+let s:Timer = {
+  \   'table': {},
+  \ }
+
+function! s:Timer.add(task) abort "{{{
+  let time = a:task._time
+  let id = timer_start(time, function('s:_timercall'), {'repeat': -1})
+  let self.table[string(id)] = a:task
+  return id
+endfunction "}}}
+
+function! s:Timer.remove(task) abort "{{{
+  let idstr = string(a:task._id)
+  if has_key(self.table, idstr)
+    call remove(self.table, idstr)
+  endif
+  if !empty(timer_info(a:task._id))
+    call timer_stop(a:task._id)
+  endif
+endfunction "}}}
+
+function! s:_timercall(id) abort "{{{
+  if !has_key(s:Timer.table, string(a:id))
+    return
+  endif
+  let timertask = s:Timer.table[string(a:id)]
+  call timertask.trigger()
 endfunction "}}}
 "}}}
 
@@ -317,6 +423,7 @@ unlockvar! s:TimerTask
 let s:TimerTask = {
   \ '__CLASS__': 'TimerTask',
   \ '_id': -1,
+  \ '_time': 0,
   \ '_state': s:OFF,
   \ }
 function! s:TimerTask() abort "{{{
@@ -337,14 +444,13 @@ endfunction "}}}
 
 function! s:TimerTask.waitfor(time) abort "{{{
   call self.cancel().repeat()
-  if self.leftcount() == 0
+  if self.leftcount() == 0 || a:time <= 0
     return self
   endif
 
   let self._state = s:ON
-  let id = timer_start(a:time, function('s:_timercall'), {'repeat': -1})
-  let self._id = id
-  let s:timertable[string(id)] = self
+  let self._time = a:time
+  let self._id = s:Timer.add(self)
   return self
 endfunction "}}}
 
@@ -353,14 +459,9 @@ function! s:TimerTask.cancel() abort "{{{
   if self._id < 0
     return self
   endif
-  let idstr = string(self._id)
-  if has_key(s:timertable, idstr)
-    call remove(s:timertable, idstr)
-  endif
-  if !empty(timer_info(self._id))
-    call timer_stop(self._id)
-    let self._id = -1
-  endif
+
+  call s:Timer.remove(self)
+  let self._id = -1
   return self
 endfunction "}}}
 
@@ -373,14 +474,6 @@ function! s:TimerTask._getid() abort "{{{
   return self._id
 endfunction "}}}
 
-function! s:_timercall(id) abort "{{{
-  if !has_key(s:timertable, string(a:id))
-    return
-  endif
-  let timertask = s:timertable[string(a:id)]
-  call timertask.trigger()
-endfunction "}}}
-
 lockvar! s:TimerTask
 "}}}
 
@@ -390,14 +483,16 @@ lockvar! s:TimerTask
 unlockvar! s:EventTask
 let s:EventTask = {
   \ '__CLASS__': 'EventTask',
+  \ '_augroup': '',
   \ '_event': '',
   \ '_pat': '',
   \ '_state': s:OFF,
   \ }
-function! s:EventTask() abort "{{{
+function! s:EventTask(...) abort "{{{
   let neattask = s:NeatTask()
-  let eventtask = deepcopy(s:EventTask)
-  return s:inherit(eventtask, neattask)
+  let eventtask = s:inherit(deepcopy(s:EventTask), neattask)
+  let eventtask._augroup = get(a:000, 0, s:DEFAULTAUGROUP)
+  return eventtask
 endfunction "}}}
 
 function! s:EventTask.clone() abort "{{{
@@ -420,14 +515,7 @@ function! s:EventTask.waitfor(eventexpr) abort "{{{
   let self._state = s:ON
   let self._event = event
   let self._pat = pat
-  if !has_key(s:eventtable, event)
-    let s:eventtable[event] = {}
-  endif
-  if !has_key(s:eventtable[event], pat)
-    let s:eventtable[event][pat] = []
-    call s:_autocmd(event, pat)
-  endif
-  call add(s:eventtable[event][pat], self)
+  call s:Event.add(self)
   return self
 endfunction "}}}
 
@@ -435,46 +523,12 @@ function! s:EventTask.cancel() abort "{{{
   let self._state = s:OFF
   let event = self._event
   let pat = self._pat
-  if has_key(s:eventtable, event) && has_key(s:eventtable[event], pat)
-    call filter(s:eventtable[event][pat], 'v:val isnot self')
-    call s:clear_autocmd(event, pat)
-  endif
+  call s:Event.remove(self)
   return self
 endfunction "}}}
 
 function! s:EventTask.isactive() abort "{{{
   return self._state && s:super(self, 'Switch')._isactive()
-endfunction "}}}
-
-function! s:_autocmd(event, pat) abort "{{{
-  execute printf("autocmd vital-Schedule %s %s call s:_doautocmd('%s', '%s')",
-          \ a:event, a:pat, a:event, a:pat)
-endfunction "}}}
-
-function! s:_doautocmd(event, pat) abort "{{{
-  if !has_key(s:eventtable, a:event) || !has_key(s:eventtable[a:event], a:pat)
-    return
-  endif
-
-  for event in s:eventtable[a:event][a:pat]
-    call event.trigger()
-  endfor
-  call s:clear_autocmd(a:event, a:pat)
-endfunction "}}}
-
-function! s:clear_autocmd(event, pat) abort "{{{
-  if !has_key(s:eventtable, a:event) || !has_key(s:eventtable[a:event], a:pat)
-    return
-  endif
-
-  call filter(s:eventtable[a:event][a:pat], '!v:val.hasdone()')
-  if empty(s:eventtable[a:event][a:pat])
-    execute printf('autocmd! vital-Schedule %s %s', a:event, a:pat)
-    call remove(s:eventtable[a:event], a:pat)
-  endif
-  if empty(s:eventtable[a:event])
-    call remove(s:eventtable, a:event)
-  endif
 endfunction "}}}
 
 lockvar! s:EventTask
@@ -491,11 +545,13 @@ let s:RaceTask = {
   \   'Timer': {},
   \   },
   \ '_state': s:OFF,
+  \ '_augroup': '',
   \ }
-function! s:RaceTask() abort "{{{
+function! s:RaceTask(...) abort "{{{
   let neattask = s:NeatTask()
-  let racetask = deepcopy(s:RaceTask)
-  return s:inherit(racetask, neattask)
+  let racetask = s:inherit(deepcopy(s:RaceTask), neattask)
+  let racetask._augroup = get(a:000, 0, s:DEFAULTAUGROUP)
+  return racetask
 endfunction "}}}
 
 function! s:RaceTask.clone() abort "{{{
@@ -564,7 +620,7 @@ function! s:RaceTask._event(eventexpr) abort "{{{
     let self.__racetask__.Event[event] = {}
   endif
 
-  let task = s:EventTask()
+  let task = s:EventTask(self._augroup)
   call task.call(self.trigger, [], self).repeat(-1)
   let self.__racetask__.Event[event][pat] = task
   return task
@@ -600,16 +656,18 @@ let s:TaskChain = {
   \ '_index': 0,
   \ '_triggerlist': [],
   \ '_orderlist': [],
+  \ '_augroup': '',
   \ '_state': s:OFF,
   \ }
-function! s:TaskChain() abort "{{{
+function! s:TaskChain(...) abort "{{{
   let counter = s:Counter(1)
-  let taskchain = deepcopy(s:TaskChain)
-  return s:inherit(taskchain, counter)
+  let taskchain = s:inherit(deepcopy(s:TaskChain), counter)
+  let taskchain._augroup = get(a:000, 0, s:DEFAULTAUGROUP)
+  return taskchain
 endfunction "}}}
 
 function! s:TaskChain.event(event) abort "{{{
-  let eventtask = s:EventTask()
+  let eventtask = s:EventTask(self._augroup)
   let ordertask = s:NeatTask()
   let args = [a:event]
   call self._settrigger(eventtask, args)
@@ -631,7 +689,7 @@ function! s:TaskChain.race(triggerlist) abort "{{{
     echoerr s:InvalidTriggers(invalid)
   endif
 
-  let racetask = s:RaceTask()
+  let racetask = s:RaceTask(self._augroup)
   let ordertask = s:NeatTask()
   let args = [a:triggerlist]
   call self._settrigger(racetask, args)
