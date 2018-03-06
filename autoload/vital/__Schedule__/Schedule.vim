@@ -428,7 +428,6 @@ function! s:EventTask.waitfor(eventexpr) abort "{{{
     call s:_autocmd(event, pat)
   endif
   call add(s:eventtable[event][pat], self)
-  let self._state = s:ON
   return self
 endfunction "}}}
 
