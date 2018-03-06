@@ -92,34 +92,28 @@ let s:Event = {
   \   'table': {},
   \ }
 
-function! s:Event.add(task) abort "{{{
-  let augroup = a:task._augroup
-  let event = a:task._event
-  let pat = a:task._pat
-  if !has_key(self.table, augroup)
-    let self.table[augroup] = {}
+function! s:Event.add(augroup, event, pat, task) abort "{{{
+  if !has_key(self.table, a:augroup)
+    let self.table[a:augroup] = {}
   endif
-  if !has_key(self.table[augroup], event)
-    let self.table[augroup][event] = {}
+  if !has_key(self.table[a:augroup], a:event)
+    let self.table[a:augroup][a:event] = {}
   endif
-  if !has_key(self.table[augroup][event], pat)
-    let self.table[augroup][event][pat] = []
-    call s:_autocmd(augroup, event, pat)
+  if !has_key(self.table[a:augroup][a:event], a:pat)
+    let self.table[a:augroup][a:event][a:pat] = []
+    call s:_autocmd(a:augroup, a:event, a:pat)
   endif
-  call add(self.table[augroup][event][pat], a:task)
+  call add(self.table[a:augroup][a:event][a:pat], a:task)
 endfunction "}}}
 
-function! s:Event.remove(task) abort "{{{
-  let augroup = a:task._augroup
-  let event = a:task._event
-  let pat = a:task._pat
-  if !has_key(s:Event.table, augroup) || !has_key(s:Event.table[augroup], event)
-      \ || !has_key(s:Event.table[augroup][event], pat)
+function! s:Event.remove(augroup, event, pat, task) abort "{{{
+  if !has_key(s:Event.table, a:augroup) || !has_key(s:Event.table[a:augroup], a:event)
+      \ || !has_key(s:Event.table[a:augroup][a:event], a:pat)
     return
   endif
 
-  call filter(self.table[augroup][event][pat], 'v:val isnot a:task')
-  call s:_sweep(augroup, event, pat)
+  call filter(self.table[a:augroup][a:event][a:pat], 'v:val isnot a:task')
+  call s:_sweep(a:augroup, a:event, a:pat)
 endfunction "}}}
 
 function! s:_autocmd(augroup, event, pat) abort "{{{
@@ -170,20 +164,19 @@ let s:Timer = {
   \   'table': {},
   \ }
 
-function! s:Timer.add(task) abort "{{{
-  let time = a:task._time
-  let id = timer_start(time, function('s:_timercall'), {'repeat': -1})
+function! s:Timer.add(time, task) abort "{{{
+  let id = timer_start(a:time, function('s:_timercall'), {'repeat': -1})
   let self.table[string(id)] = a:task
   return id
 endfunction "}}}
 
-function! s:Timer.remove(task) abort "{{{
-  let idstr = string(a:task._id)
+function! s:Timer.remove(id) abort "{{{
+  let idstr = string(a:id)
   if has_key(self.table, idstr)
     call remove(self.table, idstr)
   endif
-  if !empty(timer_info(a:task._id))
-    call timer_stop(a:task._id)
+  if !empty(timer_info(a:id))
+    call timer_stop(a:id)
   endif
 endfunction "}}}
 
@@ -450,7 +443,7 @@ function! s:TimerTask.waitfor(time) abort "{{{
 
   let self._state = s:ON
   let self._time = a:time
-  let self._id = s:Timer.add(self)
+  let self._id = s:Timer.add(a:time, self)
   return self
 endfunction "}}}
 
@@ -460,7 +453,7 @@ function! s:TimerTask.cancel() abort "{{{
     return self
   endif
 
-  call s:Timer.remove(self)
+  call s:Timer.remove(self._id)
   let self._id = -1
   return self
 endfunction "}}}
@@ -506,24 +499,26 @@ function! s:EventTask.clone() abort "{{{
 endfunction "}}}
 
 function! s:EventTask.waitfor(eventexpr) abort "{{{
-  let [event, pat] = s:event_and_patterns(a:eventexpr)
   call self.cancel().repeat()
   if self.leftcount() == 0
     return self
   endif
+  let augroup = self._augroup
+  let [event, pat] = s:event_and_patterns(a:eventexpr)
 
   let self._state = s:ON
   let self._event = event
   let self._pat = pat
-  call s:Event.add(self)
+  call s:Event.add(augroup, event, pat, self)
   return self
 endfunction "}}}
 
 function! s:EventTask.cancel() abort "{{{
   let self._state = s:OFF
+  let augroup = self._augroup
   let event = self._event
   let pat = self._pat
-  call s:Event.remove(self)
+  call s:Event.remove(augroup, event, pat, self)
   return self
 endfunction "}}}
 
@@ -541,8 +536,8 @@ unlockvar! s:RaceTask
 let s:RaceTask = {
   \ '__CLASS__': 'RaceTask',
   \ '__racetask__': {
-  \   'Event': {},
-  \   'Timer': {},
+  \   'Event': [],
+  \   'Timer': -1,
   \   },
   \ '_state': s:OFF,
   \ '_augroup': '',
@@ -569,21 +564,22 @@ function! s:RaceTask.waitfor(triggerlist) abort "{{{
   if !empty(invalid)
     echoerr s:InvalidTriggers(invalid)
   endif
+  let augroup = self._augroup
 
   let self._state = s:ON
   let events = filter(copy(a:triggerlist), 'type(v:val) is v:t_string || type(v:val) is v:t_list')
   call uniq(sort(events))
   for eventexpr in events
-    let eventtask = self._event(eventexpr)
-    call eventtask.waitfor(eventexpr)
+    let [event, pat] = s:event_and_patterns(eventexpr)
+    call s:Event.add(augroup, event, pat, self)
+    call add(self.__racetask__.Event, [event, pat])
   endfor
 
   let times = filter(copy(a:triggerlist), 'type(v:val) is v:t_number')
   call filter(times, 'v:val > 0')
   if !empty(times)
     let time = min(times)
-    let timertask = self._timer()
-    call timertask.waitfor(time)
+    let self.__racetask__.Timer = s:Timer.add(time, self)
   endif
   return self
 endfunction "}}}
@@ -591,17 +587,16 @@ endfunction "}}}
 function! s:RaceTask.cancel() abort "{{{
   let self._state = s:OFF
   if !empty(self.__racetask__.Event)
-    for [event, eventdict] in items(self.__racetask__.Event)
-      for [pat, task] in items(eventdict)
-        call task.cancel()
-      endfor
+    let augroup = self._augroup
+    for [event, pat] in self.__racetask__.Event
+      call s:Event.remove(augroup, event, pat, self)
     endfor
     call filter(self.__racetask__.Event, 0)
   endif
-  if !empty(self.__racetask__.Timer)
-    let task = self.__racetask__.Timer
-    call task.cancel()
-    let self.__racetask__.Timer = {}
+  if self.__racetask__.Timer != -1
+    let id = self.__racetask__.Timer
+    call s:Timer.remove(id)
+    let self.__racetask__.Timer = -1
   endif
   return self
 endfunction "}}}
@@ -610,38 +605,8 @@ function! s:RaceTask.isactive() abort "{{{
   return self._state && s:super(self, 'Switch')._isactive()
 endfunction "}}}
 
-function! s:RaceTask._event(eventexpr) abort "{{{
-  let [event, pat] = s:event_and_patterns(a:eventexpr)
-  if has_key(self.__racetask__.Event, event)
-    if has_key(self.__racetask__.Event[event], pat)
-      return self.__racetask__.Event[event][pat]
-    endif
-  else
-    let self.__racetask__.Event[event] = {}
-  endif
-
-  let task = s:EventTask(self._augroup)
-  call task.call(self.trigger, [], self).repeat(-1)
-  let self.__racetask__.Event[event][pat] = task
-  return task
-endfunction "}}}
-
-function! s:RaceTask._timer() abort "{{{
-  if !empty(self.__racetask__.Timer)
-    return self.__racetask__.Timer
-  endif
-
-  let task = s:TimerTask()
-  call task.call(self.trigger, [], self).repeat(-1)
-  let self.__racetask__.Timer = task
-  return task
-endfunction "}}}
-
 function! s:RaceTask._getid() abort "{{{
-  if empty(self.__racetask__.Timer)
-    return -1
-  endif
-  return self.__racetask__.Timer._id
+  return self.__racetask__.Timer
 endfunction "}}}
 
 lockvar! s:RaceTask
