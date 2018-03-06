@@ -8,7 +8,7 @@ Handling tasks.
 
 # Motivation
 
-When I write a vim plugin, I frequently meet a situation that I want to run some operations later. Vim script API gives two choices for the case, autocmd events and timer. However, these measures have quite different interfaces; an autocmd is set by a command `:autocmd` but a timer is controlled by functions. I want a unified interface which is easy to handle.
+When I write a vim plugin, I frequently come across a situation that I want to run some operations later. Currently, vim script API gives two choices for the case, autocmd events and timer. However, these measures have quite different interfaces; an autocmd is set by a command `:autocmd` but a timer is controlled by functions. I want a unified interface which is easy to handle.
 
 # Task handling
 
@@ -18,8 +18,6 @@ For example, it is a little hassle to run an function only once by using native 
 
 ```vim
 function! s:main() abort
-  " do something here
-
   " set the autocmd event for s:run_once()
   augroup example-augroup
     autocmd!
@@ -43,8 +41,6 @@ endfunction
 let s:Schedule = vital#{pluginname}#new().import('Schedule')
 
 function! s:main() abort
-  " do sometime here
-
   " set task
   let task = s:Schedule.RaceTask()
   call task.call(function('s:run_once'), [])
@@ -63,8 +59,6 @@ Moreover, it can accept multiple triggers. For example, if you want to run a fun
 let s:Schedule = vital#{pluginname}#new().import('Schedule')
 
 function! s:main() abort
-  " do sometime here
-
   " set task
   let task = s:Schedule.RaceTask()
   call task.call(function('s:run_once'), [])
