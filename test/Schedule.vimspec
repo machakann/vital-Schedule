@@ -311,7 +311,7 @@ Describe TimerTask
       " To check if the timer is appropriately abandoned later
       let id = timertask._getid()
 
-      sleep 100m
+      sleep 110m
       Assert Equals(g:count, 1)
       Assert True(timertask.hasdone())
       Assert Empty(timer_info(id))
@@ -440,7 +440,7 @@ Describe RaceTask
       doautocmd <nomodeline> vital-Schedule WinEnter
       Assert Equals(g:count, 2)
 
-      sleep 100m
+      sleep 110m
       Assert Equals(g:count, 3)
       Assert True(racetask.hasdone())
       Assert Empty(timer_info(id))
@@ -479,7 +479,7 @@ Describe TaskChain
       Assert True(exists('#vital-Schedule#WinEnter'))
       Assert False(exists('#vital-Schedule#WinLeave'))
 
-      sleep 100m
+      sleep 110m
       Assert Equals(g:count, 0)
 
       doautocmd <nomodeline> vital-Schedule WinEnter
@@ -492,7 +492,7 @@ Describe TaskChain
       Assert False(exists('#vital-Schedule#WinEnter'))
       Assert False(exists('#vital-Schedule#WinLeave'))
 
-      sleep 100m
+      sleep 110m
       Assert Equals(g:count, 2)
 
       unlet! g:count
