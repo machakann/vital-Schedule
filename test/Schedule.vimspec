@@ -483,5 +483,44 @@ Describe [Objects]
   End
 End
 
+Describe [Functions]
+  Context augroup
+    It returns a augroup-fixed copy of the Schedule module
+      let MyGroup = s:Schedule.augroup('MyGroup')
+      let eventtask = MyGroup.EventTask()
+      let racetask = MyGroup.RaceTask()
+      let taskchain = MyGroup.TaskChain()
+
+      " test eventtask
+      Assert False(exists('#MyGroup#WinEnter'))
+      call eventtask.waitfor('WinEnter')
+      Assert True(exists('#MyGroup#WinEnter'))
+
+      doautocmd <nomodeline> MyGroup WinEnter
+      Assert False(exists('#MyGroup#WinEnter'))
+
+
+      " test racetask
+      Assert False(exists('#MyGroup#WinEnter'))
+      call racetask.waitfor(['WinEnter'])
+      Assert True(exists('#MyGroup#WinEnter'))
+
+      doautocmd <nomodeline> MyGroup WinEnter
+      Assert False(exists('#MyGroup#WinEnter'))
+
+
+      " test taskchain
+      Assert False(exists('#MyGroup#WinEnter'))
+      call taskchain.event('WinEnter')
+      call taskchain.waitfor()
+      Assert True(exists('#MyGroup#WinEnter'))
+
+      doautocmd <nomodeline> MyGroup WinEnter
+      Assert False(exists('#MyGroup#WinEnter'))
+    End
+  End
+End
+
+
 " vim:set et ts=2 sw=2 sts=-1:
 
