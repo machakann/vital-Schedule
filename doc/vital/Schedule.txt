@@ -12,11 +12,15 @@ CONTENTS				*Vital.Schedule-contents*
 
 INTRODUCTION			|Vital.Schedule-introduction|
 INTERFACE			|Vital.Schedule-interface|
-  NeatTask object		  |Vital.Schedule-NeatTask|
-  EventTask object		  |Vital.Schedule-EventTask|
-  TimerTask object		  |Vital.Schedule-TimerTask|
-  RaceTask object		  |Vital.Schedule-RaceTask|
-  TaskChain object		  |Vital.Schedule-TaskChain|
+  Objects
+  NeatTask			  |Vital.Schedule-NeatTask|
+  EventTask			  |Vital.Schedule-EventTask|
+  TimerTask			  |Vital.Schedule-TimerTask|
+  RaceTask			  |Vital.Schedule-RaceTask|
+  TaskChain			  |Vital.Schedule-TaskChain|
+
+  Functions
+  augroup			  |Vital.Schedule-augroup()|
 
 ==============================================================================
 INTRODUCTION				*Vital.Schedule-introduction*
@@ -58,8 +62,8 @@ below. Each object is constructed by the function with the same name. >
 <
 Replace `{pluginname}` with your plunin name.
 
-  * NeatTask object~
-				|Vital.Schedule-NeatTask|
+  * Objects~
+  NeatTask object		|Vital.Schedule-NeatTask|
   NeatTask()			|Vital.Schedule-NeatTask()|
   NeatTask.call()		|Vital.Schedule-NeatTask.call()|
   NeatTask.execute()		|Vital.Schedule-NeatTask.execute()|
@@ -74,8 +78,7 @@ Replace `{pluginname}` with your plunin name.
   NeatTask.hasdone()		|Vital.Schedule-NeatTask.hasdone()|
   NeatTask.finishif()		|Vital.Schedule-NeatTask.finishif()|
 
-  * EventTask object~
-				|Vital.Schedule-EventTask|
+  EventTask object		|Vital.Schedule-EventTask|
   EventTask()			|Vital.Schedule-EventTask()|
   EventTask.waitfor()		|Vital.Schedule-EventTask.waitfor()|
   EventTask.cancel()		|Vital.Schedule-EventTask.cancel()|
@@ -92,8 +95,7 @@ Replace `{pluginname}` with your plunin name.
   EventTask.hasdone()		|Vital.Schedule-EventTask.hasdone()|
   EventTask.finishif()		|Vital.Schedule-EventTask.finishif()|
 
-  * TimerTask object~
-				|Vital.Schedule-TimerTask|
+  TimerTask object		|Vital.Schedule-TimerTask|
   TimerTask()			|Vital.Schedule-TimerTask()|
   TimerTask.waitfor()		|Vital.Schedule-TimerTask.waitfor()|
   TimerTask.cancel()		|Vital.Schedule-TimerTask.cancel()|
@@ -110,8 +112,7 @@ Replace `{pluginname}` with your plunin name.
   TimerTask.hasdone()		|Vital.Schedule-TimerTask.hasdone()|
   TimerTask.finishif()		|Vital.Schedule-TimerTask.finishif()|
 
-  * RaceTask object~
-				|Vital.Schedule-RaceTask|
+  RaceTask object		|Vital.Schedule-RaceTask|
   RaceTask()			|Vital.Schedule-RaceTask()|
   RaceTask.waitfor()		|Vital.Schedule-RaceTask.waitfor()|
   RaceTask.cancel()		|Vital.Schedule-RaceTask.cancel()|
@@ -128,8 +129,7 @@ Replace `{pluginname}` with your plunin name.
   RaceTask.hasdone()		|Vital.Schedule-RaceTask.hasdone()|
   RaceTask.finishif()		|Vital.Schedule-RaceTask.finishif()|
 
-  * TaskChain object~
-				|Vital.Schedule-TaskChain|
+  TaskChain object		|Vital.Schedule-TaskChain|
   TaskChain()			|Vital.Schedule-TaskChain()|
   TaskChain.event()		|Vital.Schedule-TaskChain.event()|
   TaskChain.timer()		|Vital.Schedule-TaskChain.timer()|
@@ -141,6 +141,9 @@ Replace `{pluginname}` with your plunin name.
   TaskChain.leftcount()		|Vital.Schedule-TaskChain.leftcount()|
   TaskChain.hasdone()		|Vital.Schedule-TaskChain.hasdone()|
   TaskChain.finishif()		|Vital.Schedule-TaskChain.finishif()|
+
+  * Functions~
+  augroup()			|Vital.Schedule-augroup()|
 
 ------------------------------------------------------------------------------
 NeatTask object~
@@ -914,6 +917,31 @@ TaskChain.hasdone()    [method]
 TaskChain.finishif({Funcref}, {args}[, {dict}])    [method]
 	See |Vital.Schedule-NeatTask.finishif()|.
 
+
+
+------------------------------------------------------------------------------
+Functions~
+
+					*Vital.Schedule-augroup()*
+augroup({name})    [method]
+	This module method returns a copy of the Schedule module. The first
+	argument {augroup} of |Vital.Schedule-EventTask()|,
+	|Vital.Schedule-RaceTask()| and |Vital.Schedule-TaskChain()| functions
+	of the copied module is fixed to the {name}. For example,
+>
+		let s:Schedule = vital#{pluginname}#new().import('Schedule')
+		let eventtask = s:Schedule.EventTask('myaugroup')
+		let racetask = s:Schedule.RaceTask('myaugroup')
+		let taskchain = s:Schedule.TaskChain('myaugroup')
+<
+	this is same as
+>
+		let s:Schedule = vital#{pluginname}#new().import('Schedule')
+		                                        \.augroup('myaugroup')
+		let eventtask = s:Schedule.EventTask()
+		let racetask = s:Schedule.RaceTask()
+		let taskchain = s:Schedule.TaskChain()
+<
 
 
 ==============================================================================
