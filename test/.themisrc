@@ -2,9 +2,16 @@ set encoding=utf-8
 execute 'set runtimepath+=' . expand('<sfile>:p:h:h')
 set noswapfile
 
+" for local test run
+let p = globpath(&packpath, '/pack/*/start/vital.vim', 0, 1)
+if !empty(p)
+  let vitalpath = fnamemodify(p[0], ':p')
+  execute 'set runtimepath+=' . vitalpath
+endif
+
 let g:assert = themis#helper('assert')
 call themis#helper('command').with(g:assert)
 
 " vim:set foldmethod=marker:
 " vim:set commentstring="%s:
-" vim:set noet ts=4 sw=4 sts=-1:
+" vim:set et ts=2 sw=2 sts=-1:
