@@ -1,303 +1,303 @@
 let s:scope = themis#helper('scope')
 let s:Schedule = vital#vital#new().import('Schedule')
 
-Describe Switch
-  Before
-    let Switch = s:Schedule.Switch
-  End
+Describe [Objects]
+  Context Switch
+    Before
+      let Switch = s:Schedule.Switch
+    End
 
-  Context ._on()/_off()
-    It controls the state of switch
-      Assert True(Switch()._on()._isactive())
-      Assert False(Switch()._off()._isactive())
-      Assert True(Switch()._on()._off()._on()._isactive())
+    Context ._on()/_off()
+      It controls the state of switch
+        Assert True(Switch()._on()._isactive())
+        Assert False(Switch()._off()._isactive())
+        Assert True(Switch()._on()._off()._on()._isactive())
+      End
+    End
+
+    Context .skip()
+      It controls temporal off state of a switch
+        let switch = Switch()
+
+        call switch._on().skip(1)
+        Assert False(switch._isactive())
+
+        Assert True(switch._skipsthistime())
+
+        Assert True(switch._isactive())
+        Assert False(switch._skipsthistime())
+
+        call switch.skip(2)
+        Assert False(switch._isactive())
+
+        Assert True(switch._skipsthistime())
+        Assert True(switch._skipsthistime())
+
+        Assert True(switch._isactive())
+        Assert False(switch._skipsthistime())
+      End
+    End
+
+    Context .skipif()
+      It sets a condition to skip an action
+        let switch = Switch()
+        call switch._on()
+        call switch.skipif({-> g:skip == 1}, [])
+
+        let g:skip = 0
+        Assert False(switch._skipsthistime())
+
+        let g:skip = 1
+        Assert True(switch._skipsthistime())
+
+        let g:skip = 2
+        Assert False(switch._skipsthistime())
+      End
     End
   End
 
-  Context .skip()
-    It controls temporal off state of a switch
-      let switch = Switch()
+  Context Counter
+    Before
+      let Counter = s:Schedule.Counter
+    End
 
-      call switch._on().skip(1)
-      Assert False(switch._isactive())
+    Context .leftcount()
+      It returns the left count
+        Assert Equals(Counter(2).leftcount(), 2)
+        Assert Equals(Counter(3).leftcount(), 3)
+        Assert Equals(Counter(1).leftcount(), 1)
+        Assert Equals(Counter(-1).leftcount(), -1)
+      End
+    End
 
-      Assert True(switch._skipsthistime())
+    Context .repeat(count)
+      It sets its left count
+        Assert Equals(Counter(1).repeat(1).leftcount(), 1)
+        Assert Equals(Counter(1).repeat(2).leftcount(), 2)
+        Assert Equals(Counter(1).repeat(2).repeat(1).leftcount(), 1)
 
-      Assert True(switch._isactive())
-      Assert False(switch._skipsthistime())
+        let counter = Counter(3)
+        call counter._tick() " first
+        Assert Equals(counter.leftcount(), 2)
 
-      call switch.skip(2)
-      Assert False(switch._isactive())
+        call counter._tick() " second
+        Assert Equals(counter.leftcount(), 1)
 
-      Assert True(switch._skipsthistime())
-      Assert True(switch._skipsthistime())
+        call counter._tick() " third
+        Assert Equals(counter.leftcount(), 0)
+      End
+    End
 
-      Assert True(switch._isactive())
-      Assert False(switch._skipsthistime())
+    Context .hasdone()
+      It returns TRUE if the count down has finished
+        let counter = Counter(3)
+        Assert False(counter.hasdone())
+
+        call counter._tick() " first
+        Assert False(counter.hasdone())
+
+        call counter._tick() " second
+        Assert False(counter.hasdone())
+
+        call counter._tick() " third
+        Assert True(counter.hasdone())
+
+
+        " never done
+        let counter = Counter(-1)
+        Assert False(counter.hasdone())
+
+        call counter._tick() " first
+        Assert False(counter.hasdone())
+
+        call counter._tick() " second
+        Assert False(counter.hasdone())
+
+        call counter._tick() " third
+        Assert False(counter.hasdone())
+      End
+    End
+
+    Context .finishif()
+      It sets a condition to finish the task
+        let counter = Counter(3)
+        Assert False(counter.hasdone())
+
+        call counter.finishif({-> g:finish == 1}, [])
+        let g:finish = 1
+        Assert True(counter.hasdone())
+
+
+        let counter = Counter(-1)
+        Assert False(counter.hasdone())
+
+        call counter.finishif({-> g:finish == 1}, [])
+        let g:finish = 1
+        Assert True(counter.hasdone())
+
+
+        let counter = Counter(3)
+        Assert False(counter.hasdone())
+
+        call counter.finishif({-> g:finish == 1}, [])
+        let g:finish = 0
+        Assert False(counter.hasdone())
+
+        call counter._tick() " first
+        Assert False(counter.hasdone())
+
+        call counter._tick() " second
+        Assert False(counter.hasdone())
+
+        call counter._tick() " third
+        Assert True(counter.hasdone())
+
+        unlet! finish
+      End
     End
   End
 
-  Context .skipif()
-    It sets a condition to skip an action
-      let switch = Switch()
-      call switch._on()
-      call switch.skipif({-> g:skip == 1}, [])
-
-      let g:skip = 0
-      Assert False(switch._skipsthistime())
-
-      let g:skip = 1
-      Assert True(switch._skipsthistime())
-
-      let g:skip = 2
-      Assert False(switch._skipsthistime())
+  Context Task
+    Before
+      let Task = s:Schedule.Task
     End
-  End
-End
 
-Describe Counter
-  Before
-    let Counter = s:Schedule.Counter
-  End
+    Context .call(func, args, ...)
+      It registers a function to be called later
+        let g:count = 0
+        let task = Task()
+        call task.call({n -> execute('let g:count += n')}, [1])
+        Assert Equals(g:count, 0)
 
-  Context .leftcount()
-    It returns the left count
-      Assert Equals(Counter(2).leftcount(), 2)
-      Assert Equals(Counter(3).leftcount(), 3)
-      Assert Equals(Counter(1).leftcount(), 1)
-      Assert Equals(Counter(-1).leftcount(), -1)
+        call task.trigger()
+        Assert Equals(g:count, 1)
+
+        call task.call({n -> execute('let g:count += 2*n')}, [1])
+        Assert Equals(g:count, 1)
+
+        call task.trigger()
+        Assert Equals(g:count, 4)
+
+        unlet! g:count
+      End
     End
-  End
 
-  Context .repeat(count)
-    It sets its left count
-      Assert Equals(Counter(1).repeat(1).leftcount(), 1)
-      Assert Equals(Counter(1).repeat(2).leftcount(), 2)
-      Assert Equals(Counter(1).repeat(2).repeat(1).leftcount(), 1)
+    Context .execute(cmd)
+      It registers a command to be executed later
+        let g:count = 0
+        let task = Task()
+        call task.execute('let g:count += 1')
+        Assert Equals(g:count, 0)
 
-      let counter = Counter(3)
-      call counter._tick() " first
-      Assert Equals(counter.leftcount(), 2)
+        call task.trigger()
+        Assert Equals(g:count, 1)
 
-      call counter._tick() " second
-      Assert Equals(counter.leftcount(), 1)
+        call task.execute('let g:count += 2')
+        Assert Equals(g:count, 1)
 
-      call counter._tick() " third
-      Assert Equals(counter.leftcount(), 0)
+        call task.trigger()
+        Assert Equals(g:count, 4)
+
+        unlet! g:count
+      End
     End
-  End
 
-  Context .hasdone()
-    It returns TRUE if the count down has finished
-      let counter = Counter(3)
-      Assert False(counter.hasdone())
+    Context .clear()
+      It clears all functions and commands registerd
+        let g:count = 0
+        let task = Task()
+        call task.execute('let g:count += 1')
+        call task.trigger()
+        call task.execute('let g:count += 2')
+        call task.trigger()
+        Assert Equals(g:count, 4)
 
-      call counter._tick() " first
-      Assert False(counter.hasdone())
+        call task.clear()
+        Assert Equals(g:count, 4)
+        call task.trigger()
+        Assert Equals(g:count, 4)
 
-      call counter._tick() " second
-      Assert False(counter.hasdone())
-
-      call counter._tick() " third
-      Assert True(counter.hasdone())
-
-
-      " never done
-      let counter = Counter(-1)
-      Assert False(counter.hasdone())
-
-      call counter._tick() " first
-      Assert False(counter.hasdone())
-
-      call counter._tick() " second
-      Assert False(counter.hasdone())
-
-      call counter._tick() " third
-      Assert False(counter.hasdone())
+        unlet! g:count
+      End
     End
   End
 
-  Context .finishif()
-    It sets a condition to finish the task
-      let counter = Counter(3)
-      Assert False(counter.hasdone())
-
-      call counter.finishif({-> g:finish == 1}, [])
-      let g:finish = 1
-      Assert True(counter.hasdone())
-
-
-      let counter = Counter(-1)
-      Assert False(counter.hasdone())
-
-      call counter.finishif({-> g:finish == 1}, [])
-      let g:finish = 1
-      Assert True(counter.hasdone())
-
-
-      let counter = Counter(3)
-      Assert False(counter.hasdone())
-
-      call counter.finishif({-> g:finish == 1}, [])
-      let g:finish = 0
-      Assert False(counter.hasdone())
-
-      call counter._tick() " first
-      Assert False(counter.hasdone())
-
-      call counter._tick() " second
-      Assert False(counter.hasdone())
-
-      call counter._tick() " third
-      Assert True(counter.hasdone())
-
-      unlet! finish
+  Context NeatTask
+    Before
+      let NeatTask = s:Schedule.NeatTask
     End
-  End
-End
 
-Describe Task
-  Before
-    let Task = s:Schedule.Task
-  End
+    Context .trigger()
+      It triggers all registered functions and commands
+        let g:count = 0
+        let neattask = NeatTask()
+        call neattask.repeat(-1)
 
-  Context .call(func, args, ...)
-    It registers a function to be called later
-      let g:count = 0
-      let task = Task()
-      call task.call({n -> execute('let g:count += n')}, [1])
-      Assert Equals(g:count, 0)
+        call neattask.execute('let g:count += 1').trigger()
+        Assert Equals(g:count, 1)
 
-      call task.trigger()
-      Assert Equals(g:count, 1)
+        call neattask.execute('let g:count += 2').trigger()
+        Assert Equals(g:count, 4)
 
-      call task.call({n -> execute('let g:count += 2*n')}, [1])
-      Assert Equals(g:count, 1)
+        unlet! g:count
+        call neattask.cancel()
+      End
 
-      call task.trigger()
-      Assert Equals(g:count, 4)
+      It is skipped if skipcount is set
+        let g:count = 0
+        let neattask = NeatTask()
+        call neattask.repeat(-1)
+        call neattask.execute('let g:count += 1')
 
-      unlet! g:count
-    End
-  End
+        call neattask.trigger()
+        Assert Equals(g:count, 1)
 
-  Context .execute(cmd)
-    It registers a command to be executed later
-      let g:count = 0
-      let task = Task()
-      call task.execute('let g:count += 1')
-      Assert Equals(g:count, 0)
+        call neattask.skip(1)
+        call neattask.trigger()
+        Assert Equals(g:count, 1)
+        call neattask.trigger()
+        Assert Equals(g:count, 2)
 
-      call task.trigger()
-      Assert Equals(g:count, 1)
+        unlet! g:count
+        call neattask.cancel()
+      End
 
-      call task.execute('let g:count += 2')
-      Assert Equals(g:count, 1)
+      It is repeated n-times given by .repeat()
+        let g:count = 0
+        let neattask = NeatTask()
+        call neattask.execute('let g:count += 1')
 
-      call task.trigger()
-      Assert Equals(g:count, 4)
+        call neattask.repeat(1)
+        Assert Equals(neattask.leftcount(), 1)
+        Assert False(neattask.hasdone())
+        call neattask.trigger()
+        Assert Equals(neattask.leftcount(), 0)
+        Assert True(neattask.hasdone())
 
-      unlet! g:count
+        call neattask.repeat(3)
+        Assert Equals(neattask.leftcount(), 3)
+        Assert False(neattask.hasdone())
+        call neattask.trigger() " first
+        Assert Equals(neattask.leftcount(), 2)
+        Assert False(neattask.hasdone())
+        call neattask.trigger() " second
+        Assert Equals(neattask.leftcount(), 1)
+        Assert False(neattask.hasdone())
+        call neattask.trigger() " third
+        Assert Equals(neattask.leftcount(), 0)
+        Assert True(neattask.hasdone())
+
+        unlet! g:count
+        call neattask.cancel()
+      End
     End
   End
 
-  Context .clear()
-    It clears all functions and commands registerd
-      let g:count = 0
-      let task = Task()
-      call task.execute('let g:count += 1')
-      call task.trigger()
-      call task.execute('let g:count += 2')
-      call task.trigger()
-      Assert Equals(g:count, 4)
-
-      call task.clear()
-      Assert Equals(g:count, 4)
-      call task.trigger()
-      Assert Equals(g:count, 4)
-
-      unlet! g:count
-    End
-  End
-End
-
-Describe NeatTask
-  Before
-    let NeatTask = s:Schedule.NeatTask
-  End
-
-  Context .trigger()
-    It triggers all registered functions and commands
-      let g:count = 0
-      let neattask = NeatTask()
-      call neattask.repeat(-1)
-
-      call neattask.execute('let g:count += 1').trigger()
-      Assert Equals(g:count, 1)
-
-      call neattask.execute('let g:count += 2').trigger()
-      Assert Equals(g:count, 4)
-
-      unlet! g:count
-      call neattask.cancel()
+  Context TimerTask
+    Before
+      let TimerTask = s:Schedule.TimerTask
     End
 
-    It is skipped if skipcount is set
-      let g:count = 0
-      let neattask = NeatTask()
-      call neattask.repeat(-1)
-      call neattask.execute('let g:count += 1')
-
-      call neattask.trigger()
-      Assert Equals(g:count, 1)
-
-      call neattask.skip(1)
-      call neattask.trigger()
-      Assert Equals(g:count, 1)
-      call neattask.trigger()
-      Assert Equals(g:count, 2)
-
-      unlet! g:count
-      call neattask.cancel()
-    End
-
-    It is repeated n-times given by .repeat()
-      let g:count = 0
-      let neattask = NeatTask()
-      call neattask.execute('let g:count += 1')
-
-      call neattask.repeat(1)
-      Assert Equals(neattask.leftcount(), 1)
-      Assert False(neattask.hasdone())
-      call neattask.trigger()
-      Assert Equals(neattask.leftcount(), 0)
-      Assert True(neattask.hasdone())
-
-      call neattask.repeat(3)
-      Assert Equals(neattask.leftcount(), 3)
-      Assert False(neattask.hasdone())
-      call neattask.trigger() " first
-      Assert Equals(neattask.leftcount(), 2)
-      Assert False(neattask.hasdone())
-      call neattask.trigger() " second
-      Assert Equals(neattask.leftcount(), 1)
-      Assert False(neattask.hasdone())
-      call neattask.trigger() " third
-      Assert Equals(neattask.leftcount(), 0)
-      Assert True(neattask.hasdone())
-
-      unlet! g:count
-      call neattask.cancel()
-    End
-  End
-End
-
-Describe TimerTask
-  Before
-    let TimerTask = s:Schedule.TimerTask
-  End
-
-  Context instance
     It is triggered by a delay time
       let g:count = 0
       let timertask = TimerTask()
@@ -319,14 +319,12 @@ Describe TimerTask
       call timertask.cancel()
     End
   End
-End
 
-Describe EventTask
-  Before
-    let EventTask = s:Schedule.EventTask
-  End
+  Context EventTask
+    Before
+      let EventTask = s:Schedule.EventTask
+    End
 
-  Context instance
     It is triggered by an autocmd event
       let g:count = 0
       let eventtask = EventTask('vital-Schedule')
@@ -394,14 +392,12 @@ Describe EventTask
       call eventtask.cancel()
     End
   End
-End
 
-Describe RaceTask
-  Before
-    let RaceTask = s:Schedule.RaceTask
-  End
+  Context RaceTask
+    Before
+      let RaceTask = s:Schedule.RaceTask
+    End
 
-  Context instance
     It is triggered by any one of given triggers
       let g:count = 0
       let racetask = RaceTask('vital-Schedule')
@@ -445,14 +441,12 @@ Describe RaceTask
       call racetask.cancel()
     End
   End
-End
 
-Describe TaskChain
-  Before
-    let TaskChain = s:Schedule.TaskChain
-  End
+  Context TaskChain
+    Before
+      let TaskChain = s:Schedule.TaskChain
+    End
 
-  Context instance
     It is triggered by any one of given triggers
       let g:count = 0
 
