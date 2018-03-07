@@ -112,8 +112,21 @@ function! s:Event.remove(augroup, event, pat, task) abort "{{{
     return
   endif
 
-  call filter(self.table[a:augroup][a:event][a:pat], 'v:val isnot a:task')
-  call s:_sweep(a:augroup, a:event, a:pat)
+  call filter(self.table[a:augroup][a:event][a:pat],
+            \ 'v:val isnot a:task && !v:val.hasdone()')
+
+  if empty(s:Event.table[a:augroup][a:event][a:pat])
+    call remove(s:Event.table[a:augroup][a:event], a:pat)
+    execute printf('autocmd! %s %s %s', a:augroup, a:event, a:pat)
+
+    if empty(s:Event.table[a:augroup][a:event])
+      call remove(s:Event.table[a:augroup], a:event)
+
+      if empty(s:Event.table[a:augroup])
+        call remove(s:Event.table, a:augroup)
+      endif
+    endif
+  endif
 endfunction "}}}
 
 function! s:_autocmd(augroup, event, pat) abort "{{{
@@ -134,26 +147,6 @@ function! s:_doautocmd(augroup, event, pat) abort "{{{
   for task in s:Event.table[a:augroup][a:event][a:pat]
     call task.trigger()
   endfor
-  call s:_sweep(a:augroup, a:event, a:pat)
-endfunction "}}}
-
-function! s:_sweep(augroup, event, pat) abort "{{{
-  if !has_key(s:Event.table, a:augroup) || !has_key(s:Event.table[a:augroup], a:event)
-      \ || !has_key(s:Event.table[a:augroup][a:event], a:pat)
-    return
-  endif
-
-  call filter(s:Event.table[a:augroup][a:event][a:pat], '!v:val.hasdone()')
-  if empty(s:Event.table[a:augroup][a:event][a:pat])
-    execute printf('autocmd! %s %s %s', a:augroup, a:event, a:pat)
-    call remove(s:Event.table[a:augroup][a:event], a:pat)
-  endif
-  if empty(s:Event.table[a:augroup][a:event])
-    call remove(s:Event.table[a:augroup], a:event)
-  endif
-  if empty(s:Event.table[a:augroup])
-    call remove(s:Event.table, a:augroup)
-  endif
 endfunction "}}}
 "}}}
 
@@ -504,7 +497,7 @@ function! s:EventTask.waitfor(eventexpr) abort "{{{
     return self
   endif
   let augroup = self._augroup
-  let [event, pat] = s:event_and_patterns(a:eventexpr)
+  let [event, pat] = s:_event_and_patterns(a:eventexpr)
 
   let self._state = s:ON
   let self._event = event
@@ -560,7 +553,7 @@ endfunction "}}}
 
 function! s:RaceTask.waitfor(triggerlist) abort "{{{
   call self.cancel().repeat()
-  let invalid = s:invalid_triggerlist(a:triggerlist)
+  let invalid = s:_invalid_triggerlist(a:triggerlist)
   if !empty(invalid)
     echoerr s:InvalidTriggers(invalid)
   endif
@@ -570,7 +563,7 @@ function! s:RaceTask.waitfor(triggerlist) abort "{{{
   let events = filter(copy(a:triggerlist), 'type(v:val) is v:t_string || type(v:val) is v:t_list')
   call uniq(sort(events))
   for eventexpr in events
-    let [event, pat] = s:event_and_patterns(eventexpr)
+    let [event, pat] = s:_event_and_patterns(eventexpr)
     call s:Event.add(augroup, event, pat, self)
     call add(self.__racetask__.Event, [event, pat])
   endfor
@@ -649,7 +642,7 @@ function! s:TaskChain.timer(time) abort "{{{
 endfunction "}}}
 
 function! s:TaskChain.race(triggerlist) abort "{{{
-  let invalid = s:invalid_triggerlist(a:triggerlist)
+  let invalid = s:_invalid_triggerlist(a:triggerlist)
   if !empty(invalid)
     echoerr s:InvalidTriggers(invalid)
   endif
@@ -731,7 +724,7 @@ lockvar! s:TaskChain
 
 
 
-function! s:event_and_patterns(eventexpr) abort "{{{
+function! s:_event_and_patterns(eventexpr) abort "{{{
   let t_event = type(a:eventexpr)
   if t_event is v:t_string
     let event = a:eventexpr
@@ -745,11 +738,11 @@ function! s:event_and_patterns(eventexpr) abort "{{{
   return [event, pat]
 endfunction "}}}
 
-function! s:invalid_triggerlist(triggerlist) abort "{{{
-  return filter(copy(a:triggerlist), '!s:isvalidtriggertype(v:val)')
+function! s:_invalid_triggerlist(triggerlist) abort "{{{
+  return filter(copy(a:triggerlist), '!s:_isvalidtriggertype(v:val)')
 endfunction "}}}
 
-function! s:isvalidtriggertype(item) abort "{{{
+function! s:_isvalidtriggertype(item) abort "{{{
   let t_trigger = type(a:item)
   if t_trigger is v:t_string || t_trigger is v:t_list || t_trigger is v:t_number
     return s:TRUE
