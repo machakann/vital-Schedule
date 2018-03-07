@@ -757,6 +757,14 @@ function! s:isvalidtriggertype(item) abort "{{{
   return s:FALSE
 endfunction "}}}
 
+function! s:augroup(name) dict abort "{{{
+  let new = deepcopy(self)
+  let new.EventTask = funcref(self.EventTask, [a:name])
+  let new.RaceTask = funcref(self.RaceTask, [a:name])
+  let new.TaskChain = funcref(self.TaskChain, [a:name])
+  return new
+endfunction "}}}
+
 " vim:set foldmethod=marker:
 " vim:set commentstring="%s:
 " vim:set et ts=2 sw=2 sts=-1:
