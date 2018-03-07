@@ -416,15 +416,10 @@ Describe [Objects]
       doautocmd <nomodeline> vital-Schedule WinEnter
       Assert Equals(g:count, 0)
 
+      doautocmd <nomodeline> vital-Schedule WinEnter
+      Assert Equals(g:count, 1)
+
       doautocmd <nomodeline> vital-Schedule WinLeave
-      Assert Equals(g:count, 1)
-
-      call racetask._off()
-      doautocmd <nomodeline> vital-Schedule WinEnter
-      Assert Equals(g:count, 1)
-
-      call racetask._on()
-      doautocmd <nomodeline> vital-Schedule WinEnter
       Assert Equals(g:count, 2)
 
       sleep 110m
