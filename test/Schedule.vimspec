@@ -1,5 +1,5 @@
 let s:scope = themis#helper('scope')
-let s:Schedule = s:scope.funcs('autoload/vital/__Schedule__/Schedule.vim')
+let s:Schedule = vital#vital#new().import('Schedule')
 
 Describe Switch
   Before
