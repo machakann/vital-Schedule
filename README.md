@@ -8,11 +8,11 @@ Handling tasks.
 
 # Motivation
 
-When I write a vim plugin, I frequently come across a situation that I want to run some operations later. Currently, vim script API gives two choices for the case, autocmd events and timer. However, these measures have quite different interfaces; an autocmd is set by a command `:autocmd` but a timer is controlled by functions. I want a unified interface which is easy to handle.
+When I write a vim plugin, I frequently come across a situation that I want to run some operations later. Currently, vim script API gives two choices for the case, auto-command events and timer. However, these measures have quite different interfaces; an autocmd is set by a command `:autocmd` but a timer is controlled by functions. I want a unified interface which is easy to handle.
 
 # Usage
 
-This module provides several useful objects, and here I introduce `RaceTask` object because it solves the above problem.
+The objects in `vital-Schedule` module provide another interface for auto-commands and timer. It enables us to write complicated scheduled tasks at ease.
 
 For example, it is a little hassle to run an function only once by using native autocmd interface; if an function is hooked to autocmd events, the function should unset the autocmd events by itself.
 
@@ -35,14 +35,14 @@ function! s:run_once() abort
 endfunction
 ```
 
-`RaceTask` makes the situation simpler. Using the task object, `s:run_once()` does not need any codes to unset autocmd event.
+`Task` makes the situation simpler. Using the task object, `s:run_once()` does not need any codes to unset autocmd event.
 
 ```vim
 let s:Schedule = vital#{pluginname}#new().import('Schedule')
 
 function! s:main() abort
   " set task
-  let task = s:Schedule.RaceTask()
+  let task = s:Schedule.Task()
   call task.call(function('s:run_once'), [])
   call task.waitfor(['WinLeave'])
 endfunction
@@ -60,7 +60,7 @@ let s:Schedule = vital#{pluginname}#new().import('Schedule')
 
 function! s:main() abort
   " set task
-  let task = s:Schedule.RaceTask()
+  let task = s:Schedule.Task()
   call task.call(function('s:run_once'), [])
   call task.waitfor([3000, 'TextChanged', 'TextChangedI'])
 endfunction
