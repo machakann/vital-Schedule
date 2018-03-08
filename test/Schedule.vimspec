@@ -157,25 +157,25 @@ Describe [Objects]
     End
   End
 
-  Context Task
+  Context MetaTask
     Before
-      let Task = s:Schedule.Task
+      let MetaTask = s:Schedule.MetaTask
     End
 
     Context .call(func, args, ...)
       It registers a function to be called later
         let g:count = 0
-        let task = Task()
-        call task.call({n -> execute('let g:count += n')}, [1])
+        let metatask = MetaTask()
+        call metatask.call({n -> execute('let g:count += n')}, [1])
         Assert Equals(g:count, 0)
 
-        call task.trigger()
+        call metatask.trigger()
         Assert Equals(g:count, 1)
 
-        call task.call({n -> execute('let g:count += 2*n')}, [1])
+        call metatask.call({n -> execute('let g:count += 2*n')}, [1])
         Assert Equals(g:count, 1)
 
-        call task.trigger()
+        call metatask.trigger()
         Assert Equals(g:count, 4)
 
         unlet! g:count
@@ -185,17 +185,17 @@ Describe [Objects]
     Context .execute(cmd)
       It registers a command to be executed later
         let g:count = 0
-        let task = Task()
-        call task.execute('let g:count += 1')
+        let metatask = MetaTask()
+        call metatask.execute('let g:count += 1')
         Assert Equals(g:count, 0)
 
-        call task.trigger()
+        call metatask.trigger()
         Assert Equals(g:count, 1)
 
-        call task.execute('let g:count += 2')
+        call metatask.execute('let g:count += 2')
         Assert Equals(g:count, 1)
 
-        call task.trigger()
+        call metatask.trigger()
         Assert Equals(g:count, 4)
 
         unlet! g:count
@@ -205,16 +205,16 @@ Describe [Objects]
     Context .clear()
       It clears all functions and commands registerd
         let g:count = 0
-        let task = Task()
-        call task.execute('let g:count += 1')
-        call task.trigger()
-        call task.execute('let g:count += 2')
-        call task.trigger()
+        let metatask = MetaTask()
+        call metatask.execute('let g:count += 1')
+        call metatask.trigger()
+        call metatask.execute('let g:count += 2')
+        call metatask.trigger()
         Assert Equals(g:count, 4)
 
-        call task.clear()
+        call metatask.clear()
         Assert Equals(g:count, 4)
-        call task.trigger()
+        call metatask.trigger()
         Assert Equals(g:count, 4)
 
         unlet! g:count

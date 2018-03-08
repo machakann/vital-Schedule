@@ -302,17 +302,17 @@ lockvar! s:Counter
 
 
 
-" Task class {{{
-unlockvar! s:Task
-let s:Task = {
-  \ '__CLASS__': 'Task',
+" MetaTask class {{{
+unlockvar! s:MetaTask
+let s:MetaTask = {
+  \ '__CLASS__': 'MetaTask',
   \ '_orderlist': [],
   \ }
-function! s:Task() abort "{{{
-  return deepcopy(s:Task)
+function! s:MetaTask() abort "{{{
+  return deepcopy(s:MetaTask)
 endfunction "}}}
 
-function! s:Task.trigger() abort "{{{
+function! s:MetaTask.trigger() abort "{{{
   for [kind, expr] in self._orderlist
     if kind is# 'call'
       call call('call', expr)
@@ -325,41 +325,41 @@ function! s:Task.trigger() abort "{{{
   return self
 endfunction "}}}
 
-function! s:Task.call(func, args, ...) abort "{{{
+function! s:MetaTask.call(func, args, ...) abort "{{{
   let order = ['call', [a:func, a:args] + a:000]
   call add(self._orderlist, order)
   return self
 endfunction "}}}
 
-function! s:Task.execute(cmd) abort "{{{
+function! s:MetaTask.execute(cmd) abort "{{{
   let order = ['execute', a:cmd]
   call add(self._orderlist, order)
   return self
 endfunction "}}}
 
-function! s:Task.append(task) abort "{{{
+function! s:MetaTask.append(task) abort "{{{
   let order = ['task', a:task]
   call add(self._orderlist, order)
   return self
 endfunction "}}}
 
-function! s:Task.clear() abort "{{{
+function! s:MetaTask.clear() abort "{{{
   call filter(self._orderlist, 0)
   return self
 endfunction "}}}
 
-function! s:Task.clone() abort "{{{
+function! s:MetaTask.clone() abort "{{{
   let clone = deepcopy(self)
   let clone._orderlist = copy(self._orderlist)
   return clone
 endfunction "}}}
 
-lockvar! s:Task
+lockvar! s:MetaTask
 "}}}
 
 
 
-" NeatTask class (inherits Switch, Counter and Task classes) {{{
+" NeatTask class (inherits Switch, Counter and MetaTask classes) {{{
 unlockvar! s:NeatTask
 let s:NeatTask = {
   \ '__CLASS__': 'NeatTask',
@@ -367,9 +367,9 @@ let s:NeatTask = {
 function! s:NeatTask() abort "{{{
   let switch = s:Switch()
   let counter = s:Counter(1)
-  let task = s:Task()
+  let metatask = s:MetaTask()
   let neattask = deepcopy(s:NeatTask)
-  return s:inherit(neattask, task, counter, switch)
+  return s:inherit(neattask, metatask, counter, switch)
 endfunction "}}}
 
 function! s:NeatTask.trigger() abort "{{{
@@ -379,7 +379,7 @@ function! s:NeatTask.trigger() abort "{{{
   if self.hasdone()
     return self
   endif
-  call s:super(self, 'Task').trigger()
+  call s:super(self, 'MetaTask').trigger()
   call self._tick()
   if self.hasdone()
     call self.cancel()
@@ -748,6 +748,12 @@ function! s:_isvalidtriggertype(item) abort "{{{
     return s:TRUE
   endif
   return s:FALSE
+endfunction "}}}
+
+let s:AUTOCMDEVENTS = getcompletion('', 'event')
+function! s:_isnecessaryaugroup(name) abort "{{{
+  let boollist = map(copy(s:AUTOCMDEVENTS), 'eval(printf("exists(''#%s#%s'')", a:name, v:val))')
+  return filter(boollist, 'v:val') != []
 endfunction "}}}
 
 function! s:augroup(name) dict abort "{{{
