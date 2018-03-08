@@ -6,6 +6,7 @@ License : NYSL license
           English (Unofficial) <http://www.kmonos.net/nysl/index.en.html>
 
 Requirement : Vim 8.0 or higher
+              vital.vim <https://github.com/vim-jp/vital.vim>
 
 ==============================================================================
 CONTENTS				*Vital.Schedule-contents*

@@ -10,7 +10,7 @@ Handling tasks.
 
 When I write a vim plugin, I frequently come across a situation that I want to run some operations later. Currently, vim script API gives two choices for the case, autocmd events and timer. However, these measures have quite different interfaces; an autocmd is set by a command `:autocmd` but a timer is controlled by functions. I want a unified interface which is easy to handle.
 
-# Task handling
+# Usage
 
 This module provides several useful objects, and here I introduce `RaceTask` object because it solves the above problem.
 
@@ -72,6 +72,16 @@ endfunction
 ```
 
 `s:run_once()` will be triggered by the earliest one in 3000 milliseconds, `TextChanged` or `TextChangedI`. Replace `{pluginname}` with your plugin name.
+
+# Dependency
+
+This is an external module of [vital.vim](https://github.com/vim-jp/vital.vim), thus it is necessary to use this plugin. Install `vital.vim` and this `vital-Schedule`, use `:Vitalize` command, for example:
+
+```vim
+:Vitalize --name={pluginname} . Schedule
+```
+
+See `:help Vitalizer`.
 
 # License: NYSL license
   * [Japanese](http://www.kmonos.net/nysl/)
