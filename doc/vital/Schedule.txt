@@ -331,13 +331,11 @@ NeatTask.finishif({Funcref}, {args}[, {dict}])    [method]
 Task object~
 					*Vital.Schedule-Task*
 
-`Task` object is a variant of `NeatTask` object which can have multiple
-automatic triggers, autocmd events and a delay time.
-See also |Vital.Schedule-NeatTask|
+`Task` object is a variant of `NeatTask` object with multiple automatic
+triggers, autocmd events and a delay time. See |Vital.Schedule-NeatTask| also.
 
-`Task` object has the same methods with that of `NeatTask` object, and
-additionally |Vital.Schedule-Task.waitfor()| and
-|Vital.Schedule-Task.cancel()|.
+`Task` object inherits the methods of `NeatTask` object, and additionally has
+|Vital.Schedule-Task.waitfor()| and |Vital.Schedule-Task.cancel()|.
 
 `Task` finishes after an execution in default, this number of execution can be
 changed by |Vital.Schedule-Task.repeat()|.
@@ -347,15 +345,16 @@ changed by |Vital.Schedule-Task.repeat()|.
 Task([{augroup}])    [function]
 	This function returns a new `Task` object. The optional argument
 	{augroup} should be a |String|, it is regarded as a name of autocmd
-	group assigned by |:augroup|. If it is omitted, `vital-Schedule` is
+	group applied to |autocommand-events| in {triggerlist} of
+	|Vital.Schedule-Task.waitfor()|. If it is omitted, `vital-Schedule` is
 	used. See |autocmd-groups|.
 
 
 					*Vital.Schedule-Task.waitfor()*
 Task.waitfor({triggerlist})    [method]
-	This method starts to wait for an auto-trigger. {triggerlist} is a
-	list of trigger names. The trigger name could be one of the following
-	types.
+	This method starts to wait for an auto-trigger in {triggerlist}.
+	{triggerlist} is a list of trigger names. The trigger name should be
+	one of the following types.
 
 	  * |String|: Regarded as an {event} |autocmd-events|, "*" is applied
 	              for {pat} |autocmd-patterns|
@@ -367,7 +366,6 @@ Task.waitfor({triggerlist})    [method]
 		let task = s:Schedule.Task().execute('echo "foo"')
 		call task.waitfor(['TextChanged', ['InsertEnter', '*'], 100])
 <
-
 	This method returns the task object itself.
 
 
@@ -446,9 +444,7 @@ TaskChain object~
 events and timers.
 
 Use |Vital.Schedule-TaskChain.hook()| to make a sequence, and set tasks to the
-return value of these method. These method returns a `NeatTask` object to set
-tasks for a step of sequence. Its number of execution is set as 1 in default
-but you can change it by |Vital.Schedule-NeatTask.repeat()|. >
+returned `NeatTask` object. >
 	let s:Schedule = vital#{pluginname}#new().import('Schedule')
 	let taskchain = s:Schedule.TaskChain()
 	let task1 = taskchain.hook(['InsertLeave'])
@@ -456,8 +452,8 @@ but you can change it by |Vital.Schedule-NeatTask.repeat()|. >
 	call task2.execute('echo "foo"')
 	call taskchain.waitfor()
 <
-This example shows a message "foo" after leaving insert mode and then moving
-cursor. You can write shorter: >
+The above example shows a message "foo" after leaving insert mode and then
+moving cursor. You can write shorter: >
 	let s:Schedule = vital#{pluginname}#new().import('Schedule')
 	let taskchain = s:Schedule.TaskChain()
 	call taskchain.hook(['InsertLeave'])
@@ -486,7 +482,7 @@ TaskChain.hook({triggerlist})    [method]
 	  * |Number|: Regarded as a waiting {time} for a timer |timer|
 
 	This method returns a `NeatTask` object to be called by either one of
-	those triggers. Its number of execution is set as 1 in default. >
+	those triggers. >
 		let s:Schedule = vital#{pluginname}#new().import('Schedule')
 		let taskchain = s:Schedule.TaskChain()
 		let task1 = taskchain.hook(['CmdwinLeave'])
@@ -563,6 +559,8 @@ augroup({name})    [method]
 		let task = s:Schedule.Task()
 		let taskchain = s:Schedule.TaskChain()
 <
+	This method only works for the first calling. The registered {augroup}
+	cannot be changed.
 
 
 ==============================================================================
