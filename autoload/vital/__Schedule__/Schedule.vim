@@ -524,26 +524,26 @@ lockvar! s:EventTask
 
 
 
-" RaceTask class (inherits NeatTask class) {{{
-unlockvar! s:RaceTask
-let s:RaceTask = {
-  \ '__CLASS__': 'RaceTask',
-  \ '__racetask__': {
+" Task class (inherits NeatTask class) {{{
+unlockvar! s:Task
+let s:Task = {
+  \ '__CLASS__': 'Task',
+  \ '__task__': {
   \   'Event': [],
   \   'Timer': -1,
   \   },
   \ '_state': s:OFF,
   \ '_augroup': '',
   \ }
-function! s:RaceTask(...) abort "{{{
+function! s:Task(...) abort "{{{
   let neattask = s:NeatTask()
-  let racetask = s:inherit(deepcopy(s:RaceTask), neattask)
-  let racetask._augroup = get(a:000, 0, s:DEFAULTAUGROUP)
-  return racetask
+  let task = s:inherit(deepcopy(s:Task), neattask)
+  let task._augroup = get(a:000, 0, s:DEFAULTAUGROUP)
+  return task
 endfunction "}}}
 
-function! s:RaceTask.clone() abort "{{{
-  let clone = s:RaceTask()
+function! s:Task.clone() abort "{{{
+  let clone = s:Task()
   let clone.__switch__ = deepcopy(self.__switch__)
   let clone.__counter__ = deepcopy(self.__counter__)
   let clone._state = s:OFF
@@ -551,7 +551,7 @@ function! s:RaceTask.clone() abort "{{{
   return clone
 endfunction "}}}
 
-function! s:RaceTask.waitfor(triggerlist) abort "{{{
+function! s:Task.waitfor(triggerlist) abort "{{{
   call self.cancel().repeat()
   let invalid = s:_invalid_triggerlist(a:triggerlist)
   if !empty(invalid)
@@ -565,44 +565,44 @@ function! s:RaceTask.waitfor(triggerlist) abort "{{{
   for eventexpr in events
     let [event, pat] = s:_event_and_patterns(eventexpr)
     call s:Event.add(augroup, event, pat, self)
-    call add(self.__racetask__.Event, [event, pat])
+    call add(self.__task__.Event, [event, pat])
   endfor
 
   let times = filter(copy(a:triggerlist), 'type(v:val) is v:t_number')
   call filter(times, 'v:val > 0')
   if !empty(times)
     let time = min(times)
-    let self.__racetask__.Timer = s:Timer.add(time, self)
+    let self.__task__.Timer = s:Timer.add(time, self)
   endif
   return self
 endfunction "}}}
 
-function! s:RaceTask.cancel() abort "{{{
+function! s:Task.cancel() abort "{{{
   let self._state = s:OFF
-  if !empty(self.__racetask__.Event)
+  if !empty(self.__task__.Event)
     let augroup = self._augroup
-    for [event, pat] in self.__racetask__.Event
+    for [event, pat] in self.__task__.Event
       call s:Event.remove(augroup, event, pat, self)
     endfor
-    call filter(self.__racetask__.Event, 0)
+    call filter(self.__task__.Event, 0)
   endif
-  if self.__racetask__.Timer != -1
-    let id = self.__racetask__.Timer
+  if self.__task__.Timer != -1
+    let id = self.__task__.Timer
     call s:Timer.remove(id)
-    let self.__racetask__.Timer = -1
+    let self.__task__.Timer = -1
   endif
   return self
 endfunction "}}}
 
-function! s:RaceTask.isactive() abort "{{{
+function! s:Task.isactive() abort "{{{
   return self._state && s:super(self, 'Switch')._isactive()
 endfunction "}}}
 
-function! s:RaceTask._getid() abort "{{{
-  return self.__racetask__.Timer
+function! s:Task._getid() abort "{{{
+  return self.__task__.Timer
 endfunction "}}}
 
-lockvar! s:RaceTask
+lockvar! s:Task
 "}}}
 
 
@@ -641,16 +641,16 @@ function! s:TaskChain.timer(time) abort "{{{
   return ordertask
 endfunction "}}}
 
-function! s:TaskChain.race(triggerlist) abort "{{{
+function! s:TaskChain.hook(triggerlist) abort "{{{
   let invalid = s:_invalid_triggerlist(a:triggerlist)
   if !empty(invalid)
     echoerr s:InvalidTriggers(invalid)
   endif
 
-  let racetask = s:RaceTask(self._augroup)
+  let task = s:Task(self._augroup)
   let ordertask = s:NeatTask()
   let args = [a:triggerlist]
-  call self._settrigger(racetask, args)
+  call self._settrigger(task, args)
   call self._setorder(ordertask)
   return ordertask
 endfunction "}}}
@@ -759,7 +759,7 @@ endfunction "}}}
 function! s:augroup(name) dict abort "{{{
   let new = deepcopy(self)
   let new.EventTask = funcref(self.EventTask, [a:name])
-  let new.RaceTask = funcref(self.RaceTask, [a:name])
+  let new.Task = funcref(self.Task, [a:name])
   let new.TaskChain = funcref(self.TaskChain, [a:name])
   return new
 endfunction "}}}

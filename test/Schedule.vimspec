@@ -393,25 +393,25 @@ Describe [Objects]
     End
   End
 
-  Context RaceTask
+  Context Task
     Before
-      let RaceTask = s:Schedule.RaceTask
+      let Task = s:Schedule.Task
     End
 
     It is triggered by any one of given triggers
       let g:count = 0
-      let racetask = RaceTask('vital-Schedule')
+      let task = Task('vital-Schedule')
 
-      call racetask.execute('let g:count += 1').repeat(3).skip(1)
+      call task.execute('let g:count += 1').repeat(3).skip(1)
 
       Assert False(exists('#vital-Schedule#WinEnter'))
       Assert False(exists('#vital-Schedule#WinLeave'))
-      call racetask.waitfor(['WinEnter', ['WinLeave', '*'], 100])
+      call task.waitfor(['WinEnter', ['WinLeave', '*'], 100])
       Assert True(exists('#vital-Schedule#WinEnter'))
       Assert True(exists('#vital-Schedule#WinLeave'))
 
       " To check if the timer is appropriately abandoned later
-      let id = racetask._getid()
+      let id = task._getid()
 
       doautocmd <nomodeline> vital-Schedule WinEnter
       Assert Equals(g:count, 0)
@@ -424,7 +424,7 @@ Describe [Objects]
 
       sleep 110m
       Assert Equals(g:count, 3)
-      Assert True(racetask.hasdone())
+      Assert True(task.hasdone())
       Assert Empty(timer_info(id))
 
       doautocmd <nomodeline> vital-Schedule WinEnter
@@ -433,7 +433,7 @@ Describe [Objects]
       Assert False(exists('#vital-Schedule#WinLeave'))
 
       unlet! g:count
-      call racetask.cancel()
+      call task.cancel()
     End
   End
 
@@ -446,9 +446,9 @@ Describe [Objects]
       let g:count = 0
 
       let taskchain = TaskChain('vital-Schedule')
-      call taskchain.event('WinEnter')
-      call taskchain.event('WinLeave').execute('let g:count += 1')
-      call taskchain.timer(100).execute('let g:count += 1')
+      call taskchain.hook(['WinEnter'])
+      call taskchain.hook(['WinLeave']).execute('let g:count += 1')
+      call taskchain.hook([100]).execute('let g:count += 1')
 
       Assert False(exists('#vital-Schedule#WinEnter'))
       Assert False(exists('#vital-Schedule#WinLeave'))
@@ -483,7 +483,7 @@ Describe [Functions]
     It returns a augroup-fixed copy of the Schedule module
       let MyGroup = s:Schedule.augroup('MyGroup')
       let eventtask = MyGroup.EventTask()
-      let racetask = MyGroup.RaceTask()
+      let task = MyGroup.Task()
       let taskchain = MyGroup.TaskChain()
 
       " test eventtask
@@ -495,9 +495,9 @@ Describe [Functions]
       Assert False(exists('#MyGroup#WinEnter'))
 
 
-      " test racetask
+      " test task
       Assert False(exists('#MyGroup#WinEnter'))
-      call racetask.waitfor(['WinEnter'])
+      call task.waitfor(['WinEnter'])
       Assert True(exists('#MyGroup#WinEnter'))
 
       doautocmd <nomodeline> MyGroup WinEnter
@@ -506,7 +506,7 @@ Describe [Functions]
 
       " test taskchain
       Assert False(exists('#MyGroup#WinEnter'))
-      call taskchain.event('WinEnter')
+      call taskchain.hook(['WinEnter'])
       call taskchain.waitfor()
       Assert True(exists('#MyGroup#WinEnter'))
 

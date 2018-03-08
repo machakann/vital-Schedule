@@ -16,7 +16,7 @@ INTERFACE			|Vital.Schedule-interface|
   NeatTask			  |Vital.Schedule-NeatTask|
   EventTask			  |Vital.Schedule-EventTask|
   TimerTask			  |Vital.Schedule-TimerTask|
-  RaceTask			  |Vital.Schedule-RaceTask|
+  Task				  |Vital.Schedule-Task|
   TaskChain			  |Vital.Schedule-TaskChain|
 
   Functions
@@ -29,7 +29,7 @@ INTRODUCTION				*Vital.Schedule-introduction*
 sometime later. This module provides the following objects, they are explained
 in INTERFACE section (|Vital.Schedule-interface|) in more detail.
 
-In general, use |Vital.Schedule-RaceTask| to handle tasks. It has a wider
+In general, use |Vital.Schedule-Task| to handle tasks. It has a wider
 capability than |Vital.Schedule-EventTask| and |Vital.Schedule-TimerTask|.
 
   * NeatTask object~
@@ -41,7 +41,7 @@ capability than |Vital.Schedule-EventTask| and |Vital.Schedule-TimerTask|.
   * TimerTask object~
     A task object triggered by |timer|.
 
-  * RaceTask object~
+  * Task object~
     A task object triggered by any one of assigned multiple triggers,
     (|autocmd-events| and |timer|).
 
@@ -57,7 +57,7 @@ below. Each object is constructed by the function with the same name. >
 	let neattask  = s:Schedule.NeatTask()
 	let eventtask = s:Schedule.EventTask()
 	let timertask = s:Schedule.TimerTask()
-	let racetask  = s:Schedule.RaceTask()
+	let task = s:Schedule.Task()
 	let taskchain = s:Schedule.TaskChain()
 <
 Replace `{pluginname}` with your plunin name.
@@ -112,28 +112,28 @@ Replace `{pluginname}` with your plunin name.
   TimerTask.hasdone()		|Vital.Schedule-TimerTask.hasdone()|
   TimerTask.finishif()		|Vital.Schedule-TimerTask.finishif()|
 
-  RaceTask object		|Vital.Schedule-RaceTask|
-  RaceTask()			|Vital.Schedule-RaceTask()|
-  RaceTask.waitfor()		|Vital.Schedule-RaceTask.waitfor()|
-  RaceTask.cancel()		|Vital.Schedule-RaceTask.cancel()|
-  RaceTask.call()		|Vital.Schedule-RaceTask.call()|
-  RaceTask.execute()		|Vital.Schedule-RaceTask.execute()|
-  RaceTask.append()		|Vital.Schedule-RaceTask.append()|
-  RaceTask.trigger()		|Vital.Schedule-RaceTask.trigger()|
-  RaceTask.clear()		|Vital.Schedule-RaceTask.clear()|
-  RaceTask.isactive()		|Vital.Schedule-RaceTask.isactive()|
-  RaceTask.skip()		|Vital.Schedule-RaceTask.skip()|
-  RaceTask.skipif()		|Vital.Schedule-RaceTask.skipif()|
-  RaceTask.repeat()		|Vital.Schedule-RaceTask.repeat()|
-  RaceTask.leftcount()		|Vital.Schedule-RaceTask.leftcount()|
-  RaceTask.hasdone()		|Vital.Schedule-RaceTask.hasdone()|
-  RaceTask.finishif()		|Vital.Schedule-RaceTask.finishif()|
+  Task object			|Vital.Schedule-Task|
+  Task()			|Vital.Schedule-Task()|
+  Task.waitfor()		|Vital.Schedule-Task.waitfor()|
+  Task.cancel()			|Vital.Schedule-Task.cancel()|
+  Task.call()			|Vital.Schedule-Task.call()|
+  Task.execute()		|Vital.Schedule-Task.execute()|
+  Task.append()			|Vital.Schedule-Task.append()|
+  Task.trigger()		|Vital.Schedule-Task.trigger()|
+  Task.clear()			|Vital.Schedule-Task.clear()|
+  Task.isactive()		|Vital.Schedule-Task.isactive()|
+  Task.skip()			|Vital.Schedule-Task.skip()|
+  Task.skipif()			|Vital.Schedule-Task.skipif()|
+  Task.repeat()			|Vital.Schedule-Task.repeat()|
+  Task.leftcount()		|Vital.Schedule-Task.leftcount()|
+  Task.hasdone()		|Vital.Schedule-Task.hasdone()|
+  Task.finishif()		|Vital.Schedule-Task.finishif()|
 
   TaskChain object		|Vital.Schedule-TaskChain|
   TaskChain()			|Vital.Schedule-TaskChain()|
   TaskChain.event()		|Vital.Schedule-TaskChain.event()|
   TaskChain.timer()		|Vital.Schedule-TaskChain.timer()|
-  TaskChain.race()		|Vital.Schedule-TaskChain.race()|
+  TaskChain.hook()		|Vital.Schedule-TaskChain.hook()|
   TaskChain.trigger()		|Vital.Schedule-TaskChain.trigger()|
   TaskChain.waitfor()		|Vital.Schedule-TaskChain.waitfor()|
   TaskChain.cancel()		|Vital.Schedule-TaskChain.cancel()|
@@ -421,7 +421,7 @@ EventTask.waitfor({event})    [method]
 	This method sets the task itself to an autocmd event. {event} should
 	be an autocmd event, see |autocmd-events|. An `EventTask` object can
 	be bound to only one event. If you need multiple triggers, use number
-	of `EventTask` objects or |Vital.Schedule-RaceTask|.
+	of `EventTask` objects or |Vital.Schedule-Task|.
 
 	If {event} is a |String|, "*" is used for|autocmd-patterns|.
 	If you want to set another pattern, assign a |List| like
@@ -653,33 +653,33 @@ TimerTask.finishif({Funcref}, {args}[, {dict}])    [method]
 
 
 ------------------------------------------------------------------------------
-RaceTask object~
-					*Vital.Schedule-RaceTask*
+Task object~
+					*Vital.Schedule-Task*
 
-`RaceTask` object is a variant of `NeatTask` object which can have multiple
+`Task` object is a variant of `NeatTask` object which can have multiple
 automatic triggers, autocmd events and a delay time.
 See also |Vital.Schedule-NeatTask|
 	 |Vital.Schedule-EventTask|
 	 |Vital.Schedule-TimerTask|.
 
-`RaceTask` object has the same methods with that of `NeatTask` object, and
-additionally |Vital.Schedule-RaceTask.waitfor()| and
-|Vital.Schedule-RaceTask.cancel()|.
+`Task` object has the same methods with that of `NeatTask` object, and
+additionally |Vital.Schedule-Task.waitfor()| and
+|Vital.Schedule-Task.cancel()|.
 
-`RaceTask` finishes after an execution in default, this number of execution
-can be changed by |Vital.Schedule-RaceTask.repeat()|.
+`Task` finishes after an execution in default, this number of execution can be
+changed by |Vital.Schedule-Task.repeat()|.
 
 
-					*Vital.Schedule-RaceTask()*
-RaceTask([{augroup}])    [function]
-	This function returns a new `RaceTask` object. The optional argument
+					*Vital.Schedule-Task()*
+Task([{augroup}])    [function]
+	This function returns a new `Task` object. The optional argument
 	{augroup} should be a |String|, it is regarded as a name of autocmd
 	group assigned by |:augroup|. If it is omitted, `vital-Schedule` is
 	used. See |autocmd-groups|.
 
 
-					*Vital.Schedule-RaceTask.waitfor()*
-RaceTask.waitfor({triggerlist})    [method]
+					*Vital.Schedule-Task.waitfor()*
+Task.waitfor({triggerlist})    [method]
 	This method starts to wait for an auto-trigger. {triggerlist} is a
 	list of trigger names. The trigger name could be one of the following
 	types.
@@ -691,7 +691,7 @@ RaceTask.waitfor({triggerlist})    [method]
 	  * |Number|: Regarded as a waiting {time} for a timer |timer|
 >
 		let s:Schedule = vital#{pluginname}#new().import('Schedule')
-		let task = s:Schedule.RaceTask().execute('echo "foo"')
+		let task = s:Schedule.Task().execute('echo "foo"')
 		call task.waitfor(['TextChanged', ['InsertEnter', '*'], 100])
 <
 	Check |Vital.Schedule-EventTask.waitfor()| and
@@ -700,69 +700,69 @@ RaceTask.waitfor({triggerlist})    [method]
 	This method returns the task object itself.
 
 
-					*Vital.Schedule-RaceTask.cancel()*
-RaceTask.cancel()    [method]
+					*Vital.Schedule-Task.cancel()*
+Task.cancel()    [method]
 	This method cancels the task.
 	This method returns the task object itself.
 
 
-					*Vital.Schedule-RaceTask.call()*
-RaceTask.call({Funcref}, {args}[, {dict}])    [method]
+					*Vital.Schedule-Task.call()*
+Task.call({Funcref}, {args}[, {dict}])    [method]
 	See |Vital.Schedule-NeatTask.call()|.
 
 
-					*Vital.Schedule-RaceTask.execute()*
-RaceTask.execute({cmd})    [method]
+					*Vital.Schedule-Task.execute()*
+Task.execute({cmd})    [method]
 	See |Vital.Schedule-NeatTask.execute()|.
 
 
-					*Vital.Schedule-RaceTask.append()*
-RaceTask.append({task})    [method]
+					*Vital.Schedule-Task.append()*
+Task.append({task})    [method]
 	See |Vital.Schedule-NeatTask.append()|.
 
 
-					*Vital.Schedule-RaceTask.trigger()*
-RaceTask.trigger()    [method]
+					*Vital.Schedule-Task.trigger()*
+Task.trigger()    [method]
 	See |Vital.Schedule-NeatTask.trigger()|.
 
 
-					*Vital.Schedule-RaceTask.clear()*
-RaceTask.clear()    [method]
+					*Vital.Schedule-Task.clear()*
+Task.clear()    [method]
 	See |Vital.Schedule-NeatTask.clear()|.
 
 
-					*Vital.Schedule-RaceTask.isactive()*
-RaceTask.isactive()    [method]
+					*Vital.Schedule-Task.isactive()*
+Task.isactive()    [method]
 	See |Vital.Schedule-NeatTask.isactive()|.
 
 
-					*Vital.Schedule-RaceTask.skip()*
-RaceTask.skip([{count}])    [method]
+					*Vital.Schedule-Task.skip()*
+Task.skip([{count}])    [method]
 	See |Vital.Schedule-NeatTask.skip()|.
 
 
-					*Vital.Schedule-RaceTask.skipif()*
-RaceTask.skipif({Funcref}, {args}[, {dict}])    [method]
+					*Vital.Schedule-Task.skipif()*
+Task.skipif({Funcref}, {args}[, {dict}])    [method]
 	See |Vital.Schedule-NeatTask.skipif()|.
 
 
-					*Vital.Schedule-RaceTask.repeat()*
-RaceTask.repeat([{count}])    [method]
+					*Vital.Schedule-Task.repeat()*
+Task.repeat([{count}])    [method]
 	See |Vital.Schedule-NeatTask.repeat()|.
 
 
-					*Vital.Schedule-RaceTask.leftcount()*
-RaceTask.leftcount()    [method]
+					*Vital.Schedule-Task.leftcount()*
+Task.leftcount()    [method]
 	See |Vital.Schedule-NeatTask.leftcount()|.
 
 
-					*Vital.Schedule-RaceTask.hasdone()*
-RaceTask.hasdone()    [method]
+					*Vital.Schedule-Task.hasdone()*
+Task.hasdone()    [method]
 	See |Vital.Schedule-NeatTask.hasdone()|.
 
 
-					*Vital.Schedule-RaceTask.finishif()*
-RaceTask.finishif({Funcref}, {args}[, {dict}])    [method]
+					*Vital.Schedule-Task.finishif()*
+Task.finishif({Funcref}, {args}[, {dict}])    [method]
 	See |Vital.Schedule-NeatTask.finishif()|.
 
 
@@ -774,15 +774,14 @@ TaskChain object~
 `TaskChain` object makes a task triggered by a successive sequence of autocmd
 events and timers.
 
-Use |Vital.Schedule-TaskChain.event()|, |Vital.Schedule-TaskChain.timer()| and
-|Vital.Schedule-TaskChain.race()| to make a sequence, and set tasks to the
+Use |Vital.Schedule-TaskChain.hook()| to make a sequence, and set tasks to the
 return value of these method. These method returns a `NeatTask` object to set
 tasks for a step of sequence. Its number of execution is set as 1 in default
 but you can change it by |Vital.Schedule-NeatTask.repeat()|. >
 	let s:Schedule = vital#{pluginname}#new().import('Schedule')
 	let taskchain = s:Schedule.TaskChain()
-	let task1 = taskchain.event('InsertLeave')
-	let task2 = taskchain.event('CursorMoved')
+	let task1 = taskchain.hook(['InsertLeave'])
+	let task2 = taskchain.hook(['CursorMoved'])
 	call task2.execute('echo "foo"')
 	call taskchain.waitfor()
 <
@@ -790,8 +789,8 @@ This example shows a message "foo" after leaving insert mode and then moving
 cursor. You can write shorter: >
 	let s:Schedule = vital#{pluginname}#new().import('Schedule')
 	let taskchain = s:Schedule.TaskChain()
-	call taskchain.event('InsertLeave')
-	call taskchain.event('CursorMoved').execute('echo "foo"')
+	call taskchain.hook(['InsertLeave'])
+	call taskchain.hook(['CursorMoved']).execute('echo "foo"')
 	call taskchain.waitfor()
 <
 
@@ -848,8 +847,8 @@ TaskChain.timer({time})    [method]
 	|Vital.Schedule-NeatTask.repeat()|
 
 
-					*Vital.Schedule-TaskChain.race()*
-TaskChain.race({triggerlist})    [method]
+					*Vital.Schedule-TaskChain.hook()*
+TaskChain.hook({triggerlist})    [method]
 	This method registers a multiple-triggered task. {triggers} is a list
 	of trigger names. The trigger name could be one of the following
 	types.
@@ -864,8 +863,8 @@ TaskChain.race({triggerlist})    [method]
 	those triggers. Its number of execution is set as 1 in default. >
 		let s:Schedule = vital#{pluginname}#new().import('Schedule')
 		let taskchain = s:Schedule.TaskChain()
-		let task1 = taskchain.event('CmdwinLeave')
-		let task2 = taskchain.race(['CursorMoved', 1000])
+		let task1 = taskchain.hook(['CmdwinLeave'])
+		let task2 = taskchain.hook(['CursorMoved', 1000])
 		call task2.execute('echo "original buffer"')
 		call taskchain.waitfor()
 <
@@ -875,7 +874,7 @@ TaskChain.race({triggerlist})    [method]
 	|Vital.Schedule-NeatTask.repeat()|
 	|Vital.Schedule-EventTask.waitfor()|
 	|Vital.Schedule-TimerTask.waitfor()|
-	|Vital.Schedule-RaceTask.waitfor()|
+	|Vital.Schedule-Task.waitfor()|
 
 
 					*Vital.Schedule-TaskChain.trigger()*
@@ -926,12 +925,12 @@ Functions~
 augroup({name})    [method]
 	This module method returns a copy of the Schedule module. The first
 	argument {augroup} of |Vital.Schedule-EventTask()|,
-	|Vital.Schedule-RaceTask()| and |Vital.Schedule-TaskChain()| functions
+	|Vital.Schedule-Task()| and |Vital.Schedule-TaskChain()| functions
 	of the copied module is fixed to the {name}. For example,
 >
 		let s:Schedule = vital#{pluginname}#new().import('Schedule')
 		let eventtask = s:Schedule.EventTask('myaugroup')
-		let racetask = s:Schedule.RaceTask('myaugroup')
+		let task = s:Schedule.Task('myaugroup')
 		let taskchain = s:Schedule.TaskChain('myaugroup')
 <
 	this is same as
@@ -939,7 +938,7 @@ augroup({name})    [method]
 		let s:Schedule = vital#{pluginname}#new().import('Schedule')
 		                                        \.augroup('myaugroup')
 		let eventtask = s:Schedule.EventTask()
-		let racetask = s:Schedule.RaceTask()
+		let task = s:Schedule.Task()
 		let taskchain = s:Schedule.TaskChain()
 <
 
