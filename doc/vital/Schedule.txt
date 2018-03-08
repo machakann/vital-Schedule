@@ -19,6 +19,7 @@ INTERFACE			|Vital.Schedule-interface|
 
   Functions
   augroup			  |Vital.Schedule-augroup()|
+  delete_augroup		  |Vital.Schedule-delete_augroup()|
 
 ==============================================================================
 INTRODUCTION				*Vital.Schedule-introduction*
@@ -368,6 +369,11 @@ Task.waitfor({triggerlist})    [method]
 <
 	This method returns the task object itself.
 
+	After the task done, the set |autocmd-events| will be deleted but
+	augroup will not be deleted. If you need to do it, use
+	|Vital.Schedule-delete_augroup()| function.
+	See |:augroup-delete| and |Vital.Schedule-Task()| also.
+
 
 					*Vital.Schedule-Task.cancel()*
 Task.cancel()    [method]
@@ -508,6 +514,11 @@ TaskChain.waitfor()    [method]
 	This method starts the taskchain, after calling this method it waits
 	for the first trigger to move for the next task.
 
+	After the taskchain done, the set |autocmd-events| will be deleted but
+	augroup will not be deleted. If you need to do it, use
+	|Vital.Schedule-delete_augroup()| function.
+	See |:augroup-delete| and |Vital.Schedule-TaskChain()| also.
+
 
 					*Vital.Schedule-TaskChain.cancel()*
 TaskChain.cancel()    [method]
@@ -561,6 +572,20 @@ augroup({name})    [method]
 <
 	This method only works for the first calling. The registered {augroup}
 	cannot be changed.
+
+
+					*Vital.Schedule-delete_augroup()*
+delete_augroup({name})    [function]
+	This function deletes the augroup with {name}, like |:augroup-delete|.
+
+	It returns 0 if it succeeded to delete the augroup.
+
+	It returns -1 if it failed to delete because some autocmds are still
+	left in the augroup.
+
+	It returns -2 if it failed to delete because it attempt to delete the
+	working augroup to get |E936|.
+
 
 
 ==============================================================================

@@ -405,6 +405,58 @@ Describe [Functions]
       Assert False(exists('#MyGroup#WinEnter'))
     End
   End
+
+  Context delete_augroup
+    It deletes augroup
+      augroup MyGroup
+        autocmd!
+      augroup END
+
+      let ret = s:Schedule.delete_augroup('MyGroup')
+      Assert Equals(ret, 0)
+      Assert False(exists('#MyGroup'))
+    End
+
+    It returns -1 when failed to delete because of the left autocmds
+      augroup MyGroup
+        autocmd!
+        autocmd WinEnter * echo 'foo'
+      augroup END
+
+      let ret = s:Schedule.delete_augroup('MyGroup')
+      Assert Equals(ret, -1)
+      Assert True(exists('#MyGroup'))
+
+      augroup MyGroup
+        autocmd!
+      augroup END
+      augroup! MyGroup
+    End
+
+    It returns -2 when failed to delete because of E936
+      function! s:del(name) abort
+        augroup MyGroup
+          autocmd!
+          let g:ret = s:Schedule.delete_augroup(a:name)
+        augroup END
+      endfunction
+
+      augroup MyGroup
+        autocmd!
+        autocmd WinEnter * call s:del('MyGroup')
+      augroup END
+
+      doautocmd <nomodeline> MyGroup WinEnter
+      Assert Equals(g:ret, -2)
+      Assert True(exists('#MyGroup'))
+
+      augroup MyGroup
+        autocmd!
+      augroup END
+      augroup! MyGroup
+      unlet g:ret
+    End
+  End
 End
 
 

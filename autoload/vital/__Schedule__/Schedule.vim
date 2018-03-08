@@ -626,6 +626,23 @@ function! s:augroup(name) dict abort "{{{
   return new
 endfunction "}}}
 
+function! s:delete_augroup(name) abort "{{{
+  if s:_isnecessaryaugroup(a:name)
+    " FAIL: some autocmds are still left for the augroup
+    return -1
+  endif
+
+  let ret = 0
+  try
+    execute 'augroup! ' . a:name
+  catch /^Vim\%((\a\+)\)\=:E936/
+    " FAIL: in processing the target augroup autocmd
+    let ret = -2
+  finally
+    return ret
+  endtry
+endfunction "}}}
+
 " vim:set foldmethod=marker:
 " vim:set commentstring="%s:
 " vim:set et ts=2 sw=2 sts=-1:
