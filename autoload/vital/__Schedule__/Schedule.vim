@@ -177,8 +177,8 @@ function! s:_timercall(id) abort "{{{
   if !has_key(s:Timer.table, string(a:id))
     return
   endif
-  let timertask = s:Timer.table[string(a:id)]
-  call timertask.trigger()
+  let task = s:Timer.table[string(a:id)]
+  call task.trigger()
 endfunction "}}}
 "}}}
 
@@ -404,126 +404,6 @@ lockvar! s:NeatTask
 
 
 
-" TimerTask class (inherits NeatTask class) {{{
-unlockvar! s:TimerTask
-let s:TimerTask = {
-  \ '__CLASS__': 'TimerTask',
-  \ '_id': -1,
-  \ '_time': 0,
-  \ '_state': s:OFF,
-  \ }
-function! s:TimerTask() abort "{{{
-  let neattask = s:NeatTask()
-  let timertask = deepcopy(s:TimerTask)
-  return s:inherit(timertask, neattask)
-endfunction "}}}
-
-function! s:TimerTask.clone() abort "{{{
-  let clone = s:TimerTask()
-  let clone.__switch__ = deepcopy(self.__switch__)
-  let clone.__counter__ = deepcopy(self.__counter__)
-  let clone.__timer__.id = -1
-  let clone._state = s:OFF
-  let clone._orderlist = copy(self._orderlist)
-  return clone
-endfunction "}}}
-
-function! s:TimerTask.waitfor(time) abort "{{{
-  call self.cancel().repeat()
-  if self.leftcount() == 0 || a:time <= 0
-    return self
-  endif
-
-  let self._state = s:ON
-  let self._time = a:time
-  let self._id = s:Timer.add(a:time, self)
-  return self
-endfunction "}}}
-
-function! s:TimerTask.cancel() abort "{{{
-  let self._state = s:OFF
-  if self._id < 0
-    return self
-  endif
-
-  call s:Timer.remove(self._id)
-  let self._id = -1
-  return self
-endfunction "}}}
-
-function! s:TimerTask.isactive() abort "{{{
-  return self._state && s:super(self, 'Switch')._isactive()
-endfunction "}}}
-
-function! s:TimerTask._getid() abort "{{{
-  " a method for test
-  return self._id
-endfunction "}}}
-
-lockvar! s:TimerTask
-"}}}
-
-
-
-" EventTask class (inherits NeatTask class) {{{
-unlockvar! s:EventTask
-let s:EventTask = {
-  \ '__CLASS__': 'EventTask',
-  \ '_augroup': '',
-  \ '_event': '',
-  \ '_pat': '',
-  \ '_state': s:OFF,
-  \ }
-function! s:EventTask(...) abort "{{{
-  let neattask = s:NeatTask()
-  let eventtask = s:inherit(deepcopy(s:EventTask), neattask)
-  let eventtask._augroup = get(a:000, 0, s:DEFAULTAUGROUP)
-  return eventtask
-endfunction "}}}
-
-function! s:EventTask.clone() abort "{{{
-  let clone = s:EventTask()
-  let clone.__switch__ = deepcopy(self.__switch__)
-  let clone.__counter__ = deepcopy(self.__counter__)
-  let clone._event = ''
-  let clone._state = s:OFF
-  let clone._orderlist = copy(self._orderlist)
-  return clone
-endfunction "}}}
-
-function! s:EventTask.waitfor(eventexpr) abort "{{{
-  call self.cancel().repeat()
-  if self.leftcount() == 0
-    return self
-  endif
-  let augroup = self._augroup
-  let [event, pat] = s:_event_and_patterns(a:eventexpr)
-
-  let self._state = s:ON
-  let self._event = event
-  let self._pat = pat
-  call s:Event.add(augroup, event, pat, self)
-  return self
-endfunction "}}}
-
-function! s:EventTask.cancel() abort "{{{
-  let self._state = s:OFF
-  let augroup = self._augroup
-  let event = self._event
-  let pat = self._pat
-  call s:Event.remove(augroup, event, pat, self)
-  return self
-endfunction "}}}
-
-function! s:EventTask.isactive() abort "{{{
-  return self._state && s:super(self, 'Switch')._isactive()
-endfunction "}}}
-
-lockvar! s:EventTask
-"}}}
-
-
-
 " Task class (inherits NeatTask class) {{{
 unlockvar! s:Task
 let s:Task = {
@@ -622,23 +502,6 @@ function! s:TaskChain(...) abort "{{{
   let taskchain = s:inherit(deepcopy(s:TaskChain), counter)
   let taskchain._augroup = get(a:000, 0, s:DEFAULTAUGROUP)
   return taskchain
-endfunction "}}}
-
-function! s:TaskChain.event(event) abort "{{{
-  let eventtask = s:EventTask(self._augroup)
-  let ordertask = s:NeatTask()
-  let args = [a:event]
-  call self._settrigger(eventtask, args)
-  call self._setorder(ordertask)
-  return ordertask
-endfunction "}}}
-
-function! s:TaskChain.timer(time) abort "{{{
-  let timertask = s:TimerTask()
-  let ordertask = s:NeatTask()
-  call self._settrigger(timertask, [a:time])
-  call self._setorder(ordertask)
-  return ordertask
 endfunction "}}}
 
 function! s:TaskChain.hook(triggerlist) abort "{{{
@@ -758,7 +621,6 @@ endfunction "}}}
 
 function! s:augroup(name) dict abort "{{{
   let new = deepcopy(self)
-  let new.EventTask = funcref(self.EventTask, [a:name])
   let new.Task = funcref(self.Task, [a:name])
   let new.TaskChain = funcref(self.TaskChain, [a:name])
   return new

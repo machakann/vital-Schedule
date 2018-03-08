@@ -293,106 +293,6 @@ Describe [Objects]
     End
   End
 
-  Context TimerTask
-    Before
-      let TimerTask = s:Schedule.TimerTask
-    End
-
-    It is triggered by a delay time
-      let g:count = 0
-      let timertask = TimerTask()
-
-      call timertask.execute('let g:count = 1')
-      Assert Equals(g:count, 0)
-
-      call timertask.waitfor(100)
-      Assert Equals(g:count, 0)
-
-      " To check if the timer is appropriately abandoned later
-      let id = timertask._getid()
-
-      sleep 110m
-      Assert Equals(g:count, 1)
-      Assert True(timertask.hasdone())
-      Assert Empty(timer_info(id))
-
-      call timertask.cancel()
-    End
-  End
-
-  Context EventTask
-    Before
-      let EventTask = s:Schedule.EventTask
-    End
-
-    It is triggered by an autocmd event
-      let g:count = 0
-      let eventtask = EventTask('vital-Schedule')
-
-      call eventtask.execute('let g:count += 1').repeat(3).skip(1)
-
-      Assert False(exists('#vital-Schedule#WinEnter'))
-      call eventtask.waitfor('WinEnter')
-      Assert True(exists('#vital-Schedule#WinEnter'))
-
-      doautocmd <nomodeline> vital-Schedule WinEnter
-      Assert Equals(g:count, 0)
-
-      doautocmd <nomodeline> vital-Schedule WinEnter
-      Assert Equals(g:count, 1)
-
-      call eventtask._off()
-      doautocmd <nomodeline> vital-Schedule WinEnter
-      Assert Equals(g:count, 1)
-
-      call eventtask._on()
-      doautocmd <nomodeline> vital-Schedule WinEnter
-      Assert Equals(g:count, 2)
-
-      doautocmd <nomodeline> vital-Schedule WinEnter
-      Assert Equals(g:count, 3)
-
-      doautocmd <nomodeline> vital-Schedule WinEnter
-      Assert Equals(g:count, 3)
-      Assert False(exists('#vital-Schedule#WinEnter'))
-
-      unlet! g:count
-      call eventtask.cancel()
-    End
-
-    It is triggered by an User autocmd event
-      let g:count = 0
-      let eventtask = EventTask('vital-Schedule')
-
-      call eventtask.execute('let g:count += 1').repeat(3).skip(1)
-
-      Assert False(exists('#vital-Schedule#User#TestEvent'))
-      call eventtask.waitfor(['User', 'TestEvent'])
-      Assert True(exists('#vital-Schedule#User#TestEvent'))
-
-      doautocmd <nomodeline> User TestEvent
-      Assert Equals(g:count, 0)
-
-      doautocmd <nomodeline> User TestEvent
-      Assert Equals(g:count, 1)
-
-      call eventtask._off()
-      doautocmd <nomodeline> User TestEvent
-      Assert Equals(g:count, 1)
-
-      call eventtask._on()
-      doautocmd <nomodeline> User TestEvent
-      Assert Equals(g:count, 2)
-
-      doautocmd <nomodeline> User TestEvent
-      Assert Equals(g:count, 3)
-      Assert False(exists('#vital-Schedule#User#TestEvent'))
-
-      unlet! g:count
-      call eventtask.cancel()
-    End
-  End
-
   Context Task
     Before
       let Task = s:Schedule.Task
@@ -482,17 +382,8 @@ Describe [Functions]
   Context augroup
     It returns a augroup-fixed copy of the Schedule module
       let MyGroup = s:Schedule.augroup('MyGroup')
-      let eventtask = MyGroup.EventTask()
       let task = MyGroup.Task()
       let taskchain = MyGroup.TaskChain()
-
-      " test eventtask
-      Assert False(exists('#MyGroup#WinEnter'))
-      call eventtask.waitfor('WinEnter')
-      Assert True(exists('#MyGroup#WinEnter'))
-
-      doautocmd <nomodeline> MyGroup WinEnter
-      Assert False(exists('#MyGroup#WinEnter'))
 
 
       " test task

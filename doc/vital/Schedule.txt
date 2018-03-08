@@ -14,8 +14,6 @@ INTRODUCTION			|Vital.Schedule-introduction|
 INTERFACE			|Vital.Schedule-interface|
   Objects
   NeatTask			  |Vital.Schedule-NeatTask|
-  EventTask			  |Vital.Schedule-EventTask|
-  TimerTask			  |Vital.Schedule-TimerTask|
   Task				  |Vital.Schedule-Task|
   TaskChain			  |Vital.Schedule-TaskChain|
 
@@ -29,17 +27,8 @@ INTRODUCTION				*Vital.Schedule-introduction*
 sometime later. This module provides the following objects, they are explained
 in INTERFACE section (|Vital.Schedule-interface|) in more detail.
 
-In general, use |Vital.Schedule-Task| to handle tasks. It has a wider
-capability than |Vital.Schedule-EventTask| and |Vital.Schedule-TimerTask|.
-
   * NeatTask object~
     A simple task object without any automatic triggers.
-
-  * EventTask object~
-    A task object triggered by a |autocmd-events|.
-
-  * TimerTask object~
-    A task object triggered by |timer|.
 
   * Task object~
     A task object triggered by any one of assigned multiple triggers,
@@ -55,8 +44,6 @@ This module provide the following objects and their interfaces are listed
 below. Each object is constructed by the function with the same name. >
 	let s:Schedule = vital#{pluginname}#new().import('Schedule')
 	let neattask  = s:Schedule.NeatTask()
-	let eventtask = s:Schedule.EventTask()
-	let timertask = s:Schedule.TimerTask()
 	let task = s:Schedule.Task()
 	let taskchain = s:Schedule.TaskChain()
 <
@@ -78,40 +65,6 @@ Replace `{pluginname}` with your plunin name.
   NeatTask.hasdone()		|Vital.Schedule-NeatTask.hasdone()|
   NeatTask.finishif()		|Vital.Schedule-NeatTask.finishif()|
 
-  EventTask object		|Vital.Schedule-EventTask|
-  EventTask()			|Vital.Schedule-EventTask()|
-  EventTask.waitfor()		|Vital.Schedule-EventTask.waitfor()|
-  EventTask.cancel()		|Vital.Schedule-EventTask.cancel()|
-  EventTask.call()		|Vital.Schedule-EventTask.call()|
-  EventTask.execute()		|Vital.Schedule-EventTask.execute()|
-  EventTask.append()		|Vital.Schedule-EventTask.append()|
-  EventTask.trigger()		|Vital.Schedule-EventTask.trigger()|
-  EventTask.clear()		|Vital.Schedule-EventTask.clear()|
-  EventTask.isactive()		|Vital.Schedule-EventTask.isactive()|
-  EventTask.skip()		|Vital.Schedule-EventTask.skip()|
-  EventTask.skipif()		|Vital.Schedule-EventTask.skipif()|
-  EventTask.repeat()		|Vital.Schedule-EventTask.repeat()|
-  EventTask.leftcount()		|Vital.Schedule-EventTask.leftcount()|
-  EventTask.hasdone()		|Vital.Schedule-EventTask.hasdone()|
-  EventTask.finishif()		|Vital.Schedule-EventTask.finishif()|
-
-  TimerTask object		|Vital.Schedule-TimerTask|
-  TimerTask()			|Vital.Schedule-TimerTask()|
-  TimerTask.waitfor()		|Vital.Schedule-TimerTask.waitfor()|
-  TimerTask.cancel()		|Vital.Schedule-TimerTask.cancel()|
-  TimerTask.call()		|Vital.Schedule-TimerTask.call()|
-  TimerTask.execute()		|Vital.Schedule-TimerTask.execute()|
-  TimerTask.append()		|Vital.Schedule-TimerTask.append()|
-  TimerTask.trigger()		|Vital.Schedule-TimerTask.trigger()|
-  TimerTask.clear()		|Vital.Schedule-TimerTask.clear()|
-  TimerTask.isactive()		|Vital.Schedule-TimerTask.isactive()|
-  TimerTask.skip()		|Vital.Schedule-TimerTask.skip()|
-  TimerTask.skipif()		|Vital.Schedule-TimerTask.skipif()|
-  TimerTask.repeat()		|Vital.Schedule-TimerTask.repeat()|
-  TimerTask.leftcount()		|Vital.Schedule-TimerTask.leftcount()|
-  TimerTask.hasdone()		|Vital.Schedule-TimerTask.hasdone()|
-  TimerTask.finishif()		|Vital.Schedule-TimerTask.finishif()|
-
   Task object			|Vital.Schedule-Task|
   Task()			|Vital.Schedule-Task()|
   Task.waitfor()		|Vital.Schedule-Task.waitfor()|
@@ -131,8 +84,6 @@ Replace `{pluginname}` with your plunin name.
 
   TaskChain object		|Vital.Schedule-TaskChain|
   TaskChain()			|Vital.Schedule-TaskChain()|
-  TaskChain.event()		|Vital.Schedule-TaskChain.event()|
-  TaskChain.timer()		|Vital.Schedule-TaskChain.timer()|
   TaskChain.hook()		|Vital.Schedule-TaskChain.hook()|
   TaskChain.trigger()		|Vital.Schedule-TaskChain.trigger()|
   TaskChain.waitfor()		|Vital.Schedule-TaskChain.waitfor()|
@@ -377,290 +328,12 @@ NeatTask.finishif({Funcref}, {args}[, {dict}])    [method]
 
 
 ------------------------------------------------------------------------------
-EventTask object~
-					*Vital.Schedule-EventTask*
-
-`EventTask` object is used to hook operations for |autocmd-events|. It is a
-variant of `NeatTask` object and automatically triggered by an autocmd event.
-|Vital.Schedule-NeatTask|
-
-`EventTask` object has the same methods with that of `NeatTask` object, and
-additionally |Vital.Schedule-EventTask.waitfor()| and
-|Vital.Schedule-EventTask.cancel()|.
-
-|Vital.Schedule-EventTask.waitfor()| binds the task to an autocmd event.
-The number of execution can be set by |Vital.Schedule-EventTask.repeat()|.
-The default number of execution is 1. >
-	let s:Schedule = vital#{pluginname}#new().import('Schedule')
-
-	function! s:sayfoo() abort
-	    echo 'foo'
-	endfunction
-
-	let eventtask = s:Schedule.EventTask()
-	call eventtask.call(function('s:sayfoo'), [])
-	call eventtask.execute('echo "foo"')
-	call eventtask.waitfor('TextChanged')
-<
-
-If the task is no longer needed, use |Vital.Schedule-EventTask.cancel()|. >
-	" cancel the task
-	call eventtask.cancel()
-<
-
-					*Vital.Schedule-EventTask()*
-EventTask([{augroup}])    [function]
-	This function returns a new `EventTask` object. The optional argument
-	{augroup} should be a |String|, it is regarded as a name of autocmd
-	group assigned by |:augroup|. If it is omitted, `vital-Schedule` is
-	used. See |autocmd-groups|.
-
-
-					*Vital.Schedule-EventTask.waitfor()*
-EventTask.waitfor({event})    [method]
-	This method sets the task itself to an autocmd event. {event} should
-	be an autocmd event, see |autocmd-events|. An `EventTask` object can
-	be bound to only one event. If you need multiple triggers, use number
-	of `EventTask` objects or |Vital.Schedule-Task|.
-
-	If {event} is a |String|, "*" is used for|autocmd-patterns|.
-	If you want to set another pattern, assign a |List| like
-	[{eventname}, {pat}]; for example, task.waitfor(['BufRead', '*.txt']).
-	See |autocmd-patterns| and |autocmd-buflocal|.
-
-	If you have achieved the purpose of the task, you can
-	stop the task by calling |Vital.Schedule-EventTask.cancel()|. >
-		let s:Schedule = vital#{pluginname}#new().import('Schedule')
-
-		function! s:sayfoo() abort
-		    echo 'foo'
-		endfunction
-
-		" make and set a new task to 'TextChanged' event
-		let task = s:Schedule.EventTask()
-				\.call(function('s:sayfoo'), [])
-				\.waitfor('TextChanged')
-
-		" finish the task
-		call task.cancel()
-<
-	Or use |Vital.Schedule-EventTask.repeat()| to finish after a certain
-	number of callings. >
-		let s:Schedule = vital#{pluginname}#new().import('Schedule')
-
-		" it will be abandoned after three times callings
-		let task = s:Schedule.EventTask()
-				\.execute('echo "foo"')
-				\.repeat(3)
-				\.waitfor('TextChanged')
-<
-	This method returns the task object itself.
-
-
-					*Vital.Schedule-EventTask.cancel()*
-EventTask.cancel()    [method]
-	This method cancels the task.
-	This method returns the task object itself.
-
-
-					*Vital.Schedule-EventTask.call()*
-EventTask.call({Funcref}, {args}[, {dict}])    [method]
-	See |Vital.Schedule-NeatTask.call()|.
-
-
-					*Vital.Schedule-EventTask.execute()*
-EventTask.execute({cmd})    [method]
-	See |Vital.Schedule-NeatTask.execute()|.
-
-
-					*Vital.Schedule-EventTask.append()*
-EventTask.append({task})    [method]
-	See |Vital.Schedule-NeatTask.append()|.
-
-
-					*Vital.Schedule-EventTask.trigger()*
-EventTask.trigger()    [method]
-	See |Vital.Schedule-NeatTask.trigger()|.
-
-
-					*Vital.Schedule-EventTask.clear()*
-EventTask.clear()    [method]
-	See |Vital.Schedule-NeatTask.clear()|.
-
-
-					*Vital.Schedule-EventTask.clone()*
-EventTask.clone()    [method]
-	See |Vital.Schedule-NeatTask.clone()|.
-
-
-					*Vital.Schedule-EventTask.isactive()*
-EventTask.isactive()    [method]
-	See |Vital.Schedule-NeatTask.isactive()|.
-
-
-					*Vital.Schedule-EventTask.skip()*
-EventTask.skip([{count}])    [method]
-	See |Vital.Schedule-NeatTask.skip()|.
-
-
-					*Vital.Schedule-EventTask.skipif()*
-EventTask.skipif({Funcref}, {args}[, {dict}])    [method]
-	See |Vital.Schedule-NeatTask.skip()|.
-
-
-					*Vital.Schedule-EventTask.repeat()*
-EventTask.repeat([{count}])    [method]
-	See |Vital.Schedule-NeatTask.repeat()|.
-
-
-					*Vital.Schedule-EventTask.leftcount()*
-EventTask.leftcount()    [method]
-	See |Vital.Schedule-NeatTask.leftcount()|.
-
-
-					*Vital.Schedule-EventTask.hasdone()*
-EventTask.hasdone()    [method]
-	See |Vital.Schedule-NeatTask.hasdone()|.
-
-
-					*Vital.Schedule-EventTask.finishif()*
-EventTask.finishif({Funcref}, {args}[, {dict}])    [method]
-	See |Vital.Schedule-NeatTask.finishif()|.
-
-
-
-------------------------------------------------------------------------------
-TimerTask object~
-					*Vital.Schedule-TimerTask*
-
-`TimerTask` is used to delay the execution of tasks. It is a variant of
-`NeatTask` object and automatically triggered by a delay time.
-See |Vital.Schedule-NeatTask|.
-
-`TimerTask` object has the same methods with that of `NeatTask` object, and
-additionally |Vital.Schedule-TimerTask.waitfor()| and
-|Vital.Schedule-TimerTask.cancel()|.
-
-|Vital.Schedule-TimerTask.waitfor()| sets the delay time and start counting
-down. After the delay time passed, the registered tasks are executed.
-`TimerTask` finishes after an execution in default, this number of execution
-can be changed by |Vital.Schedule-TimerTask.repeat()|. If you want to stop a
-started `TimerTask` before the last execution, you can use
-|Vital.Schedule-TimerTask.cancel()|. >
-	let s:Schedule = vital#{pluginname}#new().import('Schedule')
-
-	function! s:sayfoo() abort
-		echo 'foo'
-	endfunction
-
-	let timertask = s:Schedule.TimerTask()
-	call timertask.call(function('s:sayfoo'), [])
-	call timertask.execute('echo "foo"')
-	call timertask.waitfor(100)
-<
-
-					*Vital.Schedule-TimerTask()*
-TimerTask()    [function]
-	This function returns a new `TimerTask` object.
-
-
-					*Vital.Schedule-TimerTask.waitfor()*
-TimerTask.waitfor({time})    [method]
-	This method sets the delay time and start counting down.
-	This method returns the task object itself. >
-		let s:Schedule = vital#{pluginname}#new().import('Schedule')
-
-		function! s:sayfoo() abort
-			echo 'foo'
-		endfunction
-
-		" make and start a new task executed after 100 millisecond
-		let task = s:Schedule.TimerTask()
-				\.call(function('s:sayfoo'), [])
-				\.waitfor(100)
-<
-
-					*Vital.Schedule-TimerTask.cancel()*
-TimerTask.cancel()    [method]
-	This method cancells the task.
-	This method returns the task object itself.
-
-
-					*Vital.Schedule-TimerTask.call()*
-TimerTask.call({Funcref}, {args}[, {dict}])    [method]
-	See |Vital.Schedule-NeatTask.call()|.
-
-
-					*Vital.Schedule-TimerTask.execute()*
-TimerTask.execute({cmd})    [method]
-	See |Vital.Schedule-NeatTask.execute()|.
-
-
-					*Vital.Schedule-TimerTask.append()*
-TimerTask.append({task})    [method]
-	See |Vital.Schedule-NeatTask.append()|.
-
-
-					*Vital.Schedule-TimerTask.trigger()*
-TimerTask.trigger()    [method]
-	See |Vital.Schedule-NeatTask.trigger()|.
-
-
-					*Vital.Schedule-TimerTask.clear()*
-TimerTask.clear()    [method]
-	See |Vital.Schedule-NeatTask.clear()|.
-
-
-					*Vital.Schedule-TimerTask.clone()*
-TimerTask.clone()    [method]
-	See |Vital.Schedule-NeatTask.clone()|.
-
-
-					*Vital.Schedule-TimerTask.isactive()*
-TimerTask.isactive()    [method]
-	See |Vital.Schedule-NeatTask.isactive()|.
-
-
-					*Vital.Schedule-TimerTask.skip()*
-TimerTask.skip([{count}])    [method]
-	See |Vital.Schedule-NeatTask.skip()|.
-
-
-					*Vital.Schedule-TimerTask.skipif()*
-TimerTask.skipif({Funcref}, {args}[, {dict}])    [method]
-	See |Vital.Schedule-NeatTask.skipif()|.
-
-
-					*Vital.Schedule-TimerTask.repeat()*
-TimerTask.repeat([{count}])    [method]
-	See |Vital.Schedule-NeatTask.repeat()|.
-
-
-					*Vital.Schedule-TimerTask.leftcount()*
-TimerTask.leftcount()    [method]
-	See |Vital.Schedule-NeatTask.leftcount()|.
-
-
-					*Vital.Schedule-TimerTask.hasdone()*
-TimerTask.hasdone()    [method]
-	See |Vital.Schedule-NeatTask.hasdone()|.
-
-
-					*Vital.Schedule-TimerTask.finishif()*
-TimerTask.finishif({Funcref}, {args}[, {dict}])    [method]
-	See |Vital.Schedule-NeatTask.finishif()|.
-
-
-
-------------------------------------------------------------------------------
 Task object~
 					*Vital.Schedule-Task*
 
 `Task` object is a variant of `NeatTask` object which can have multiple
 automatic triggers, autocmd events and a delay time.
 See also |Vital.Schedule-NeatTask|
-	 |Vital.Schedule-EventTask|
-	 |Vital.Schedule-TimerTask|.
 
 `Task` object has the same methods with that of `NeatTask` object, and
 additionally |Vital.Schedule-Task.waitfor()| and
@@ -694,8 +367,6 @@ Task.waitfor({triggerlist})    [method]
 		let task = s:Schedule.Task().execute('echo "foo"')
 		call task.waitfor(['TextChanged', ['InsertEnter', '*'], 100])
 <
-	Check |Vital.Schedule-EventTask.waitfor()| and
-	|Vital.Schedule-TimerTask.waitfor()| also.
 
 	This method returns the task object itself.
 
@@ -802,51 +473,6 @@ TaskChain([{augroup}])    [function]
 	used. See |autocmd-groups|.
 
 
-					*Vital.Schedule-TaskChain.event()*
-TaskChain.event({event})    [method]
-	This method registers a task to the autocmd event.
-
-	If {event} is a |String|, "*" is used for|autocmd-patterns|.
-	If you want to set another pattern, assign a |List| like
-	[{eventname}, {pat}]; for example, task.waitfor(['BufRead', '*.txt']).
-	See |autocmd-patterns| and |autocmd-buflocal|.
-
-	This method returns a `NeatTask` object bound to the autocmd event.
-	Its number of execution is set as 1 in default >
-		let s:Schedule = vital#{pluginname}#new().import('Schedule')
-		let taskchain = s:Schedule.TaskChain()
-		let task1 = taskchain.event('InsertEnter')
-		let task2 = taskchain.event(['CursorMoved', '*'])
-		call task1.execute('echo "InsertEnter"')
-		call task2.execute('echo "CursorMoved"')
-		call taskchain.waitfor()
-<
-	"InsertEnter" will be echoed at the first |InsertEnter| event, then
-	wait for |CursorMovedI| event to echo "CursorMovedI".
-	|Vital.Schedule-NeatTask|
-	|Vital.Schedule-NeatTask.repeat()|
-	|Vital.Schedule-EventTask.waitfor()|
-
-
-					*Vital.Schedule-TaskChain.timer()*
-TaskChain.timer({time})    [method]
-	This method registers a timer task. {time} is a delay time duration.
-	This method returns a `NeatTask` object triggered after {time}
-	millisecond later. Its number of execution is set as 1 in default. >
-		let s:Schedule = vital#{pluginname}#new().import('Schedule')
-		let taskchain = s:Schedule.TaskChain()
-		let task1 = taskchain.timer(1000)
-		let task2 = taskchain.timer(5000)
-		call task1.execute('echo "1s passed"')
-		call task2.execute('echo "6s passed"')
-		call taskchain.waitfor()
-<
-	You will see the message "1s passed" 1 second later and then "6s
-	passed" will displayed after an additional 5 seconds.
-	|Vital.Schedule-NeatTask|
-	|Vital.Schedule-NeatTask.repeat()|
-
-
 					*Vital.Schedule-TaskChain.hook()*
 TaskChain.hook({triggerlist})    [method]
 	This method registers a multiple-triggered task. {triggers} is a list
@@ -872,8 +498,6 @@ TaskChain.hook({triggerlist})    [method]
 	buffer" if you move cursor or wait for 1 second.
 	|Vital.Schedule-NeatTask|
 	|Vital.Schedule-NeatTask.repeat()|
-	|Vital.Schedule-EventTask.waitfor()|
-	|Vital.Schedule-TimerTask.waitfor()|
 	|Vital.Schedule-Task.waitfor()|
 
 
@@ -924,12 +548,11 @@ Functions~
 					*Vital.Schedule-augroup()*
 augroup({name})    [method]
 	This module method returns a copy of the Schedule module. The first
-	argument {augroup} of |Vital.Schedule-EventTask()|,
-	|Vital.Schedule-Task()| and |Vital.Schedule-TaskChain()| functions
-	of the copied module is fixed to the {name}. For example,
+	argument {augroup} of |Vital.Schedule-Task()| and
+	|Vital.Schedule-TaskChain()| functions of the copied module is fixed
+	to the {name}. For example,
 >
 		let s:Schedule = vital#{pluginname}#new().import('Schedule')
-		let eventtask = s:Schedule.EventTask('myaugroup')
 		let task = s:Schedule.Task('myaugroup')
 		let taskchain = s:Schedule.TaskChain('myaugroup')
 <
@@ -937,7 +560,6 @@ augroup({name})    [method]
 >
 		let s:Schedule = vital#{pluginname}#new().import('Schedule')
 		                                        \.augroup('myaugroup')
-		let eventtask = s:Schedule.EventTask()
 		let task = s:Schedule.Task()
 		let taskchain = s:Schedule.TaskChain()
 <
