@@ -478,6 +478,7 @@ function! s:Task.isactive() abort "{{{
   return self._state && s:super(self, 'Switch')._isactive()
 endfunction "}}}
 
+" a method for test
 function! s:Task._getid() abort "{{{
   return self.__task__.Timer
 endfunction "}}}
