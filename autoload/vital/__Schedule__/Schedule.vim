@@ -1,3 +1,4 @@
+" TODO: Implement Task.pause()/Task.resume()
 " TODO: Implement NeatTask.preprocess()/.postprocess()
 " TODO: Support [nested]
 let s:TRUE = 1
