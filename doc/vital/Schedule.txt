@@ -1,4 +1,4 @@
-*vital/Schedule.txt*	Handling tasks
+*vital/Schedule.txt*	Handling auto-command and timer
 
 Author  : machakann <https://github.com/machakann>
 License : NYSL license
