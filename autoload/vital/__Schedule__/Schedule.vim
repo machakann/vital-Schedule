@@ -492,17 +492,59 @@ lockvar! s:Task
 unlockvar! s:TaskChain
 let s:TaskChain = {
   \ '__CLASS__': 'TaskChain',
-  \ '_index': 0,
-  \ '_triggerlist': [],
-  \ '_orderlist': [],
-  \ '_augroup': '',
+  \ '__taskchain__': {
+  \   'index': 0,
+  \   'triggerlist': [],
+  \   'orderlist': [],
+  \   },
   \ '_state': s:OFF,
+  \ '_augroup': '',
   \ }
 function! s:TaskChain(...) abort "{{{
   let counter = s:Counter(1)
   let taskchain = s:inherit(deepcopy(s:TaskChain), counter)
   let taskchain._augroup = get(a:000, 0, s:DEFAULTAUGROUP)
   return taskchain
+endfunction "}}}
+
+function! s:TaskChain._gettrigger() abort "{{{
+  return self.__taskchain__.triggerlist[self.__taskchain__.index]
+endfunction "}}}
+
+function! s:TaskChain._addtrigger(triggertask, args) abort "{{{
+  call a:triggertask.repeat(-1)
+  call a:triggertask.call(self.trigger, [], self)
+  call add(self.__taskchain__.triggerlist, [a:triggertask, a:args])
+endfunction "}}}
+
+function! s:TaskChain._getorder() abort "{{{
+  return self.__taskchain__.orderlist[self.__taskchain__.index]
+endfunction "}}}
+
+function! s:TaskChain._addorder(ordertask) abort "{{{
+  call add(self.__taskchain__.orderlist, a:ordertask)
+endfunction "}}}
+
+function! s:TaskChain._gonext() abort "{{{
+  let [trigger, _] = self._gettrigger()
+  call trigger.cancel()
+
+  let self.__taskchain__.index += 1
+  if self.__taskchain__.index == len(self.__taskchain__.orderlist)
+    call self._tick()
+    if self.hasdone()
+      call self.cancel()
+      return
+    else
+      let self.__taskchain__.index = 0
+    endif
+  endif
+  let [nexttrigger, args] = self._gettrigger()
+  call call(nexttrigger.waitfor, args, nexttrigger)
+endfunction "}}}
+
+function! s:TaskChain._isover() abort "{{{
+  return self.__taskchain__.index >= len(self.__taskchain__.orderlist)
 endfunction "}}}
 
 function! s:TaskChain.hook(triggerlist) abort "{{{
@@ -514,17 +556,17 @@ function! s:TaskChain.hook(triggerlist) abort "{{{
   let task = s:Task(self._augroup)
   let ordertask = s:NeatTask()
   let args = [a:triggerlist]
-  call self._settrigger(task, args)
-  call self._setorder(ordertask)
+  call self._addtrigger(task, args)
+  call self._addorder(ordertask)
   return ordertask
 endfunction "}}}
 
 function! s:TaskChain.trigger() abort "{{{
-  if self._index >= len(self._orderlist)
+  if self._isover()
     return self
   endif
 
-  let task = self._orderlist[self._index]
+  let task = self._getorder()
   call task.trigger()
   if self.hasdone()
     call self.cancel()
@@ -537,50 +579,20 @@ endfunction "}}}
 function! s:TaskChain.waitfor() abort "{{{
   call self.cancel().repeat()
   let self._state = s:ON
-  let [trigger, args] = self._triggerlist[self._index]
+  let [trigger, args] = self._gettrigger()
   call call(trigger.waitfor, args, trigger)
   return self
 endfunction "}}}
 
 function! s:TaskChain.cancel() abort "{{{
   let self._state = s:OFF
-  if self._index == len(self._orderlist)
+  if self._isover()
     return self
   endif
-  let [trigger, _] = self._triggerlist[self._index]
-  let task = self._orderlist[self._index]
+
+  let [trigger, _] = self._gettrigger()
   call trigger.cancel()
-  call task.cancel()
   return self
-endfunction "}}}
-
-function! s:TaskChain._settrigger(triggertask, args) abort "{{{
-  call a:triggertask.repeat(-1)
-  call a:triggertask.call(self.trigger, [], self)
-  call add(self._triggerlist, [a:triggertask, a:args])
-endfunction "}}}
-
-function! s:TaskChain._setorder(ordertask) abort "{{{
-  call a:ordertask.repeat(1)
-  call add(self._orderlist, a:ordertask)
-endfunction "}}}
-
-function! s:TaskChain._gonext() abort "{{{
-  let [trigger, _] = self._triggerlist[self._index]
-  call trigger.cancel()
-
-  let self._index += 1
-  if self._index == len(self._orderlist)
-    call self._tick()
-    if self.hasdone()
-      call self.cancel()
-      return
-    else
-      let self._index = 0
-    endif
-  endif
-  let [nexttrigger, args] = self._triggerlist[self._index]
-  call call(nexttrigger.waitfor, args, nexttrigger)
 endfunction "}}}
 
 lockvar! s:TaskChain
