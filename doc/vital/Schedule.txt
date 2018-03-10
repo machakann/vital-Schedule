@@ -247,8 +247,8 @@ NeatTask.skip([{count}])    [method]
 NeatTask.skipif({Funcref}, {args}[, {dict}])    [method]
 	This method sets a condition to skip an action. If {Funcref} is
 	evaluated with a |List| of {args} as arguments to return |TRUE|, the
-	task will be finished immediately. {dict} is for functions with the
-	"dict" attribute. It will be used to set the local variable "self".
+	task will be skipped. {dict} is for functions with the "dict"
+	attribute. It will be used to set the local variable "self".
 	|Dictionary-function| This method returns the task object itself. >
 		let s:Schedule = vital#{pluginname}#new().import('Schedule')
 
