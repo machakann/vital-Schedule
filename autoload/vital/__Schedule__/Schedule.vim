@@ -627,17 +627,22 @@ function! s:_isvalidtriggertype(item) abort "{{{
   return s:FALSE
 endfunction "}}}
 
-let s:AUTOCMDEVENTS = getcompletion('', 'event')
-function! s:_isnecessaryaugroup(name) abort "{{{
-  let boollist = map(copy(s:AUTOCMDEVENTS), 'eval(printf("exists(''#%s#%s'')", a:name, v:val))')
-  return filter(boollist, 'v:val') != []
-endfunction "}}}
-
 function! s:augroup(name) dict abort "{{{
   let new = deepcopy(self)
   let new.Task = funcref(self.Task, [a:name])
   let new.TaskChain = funcref(self.TaskChain, [a:name])
   return new
+endfunction "}}}
+
+
+
+" Available if getcompletion() is available
+if exists('*getcompletion')
+
+let s:AUTOCMDEVENTS = getcompletion('', 'event')
+function! s:_isnecessaryaugroup(name) abort "{{{
+  let boollist = map(copy(s:AUTOCMDEVENTS), 'eval(printf("exists(''#%s#%s'')", a:name, v:val))')
+  return filter(boollist, 'v:val') != []
 endfunction "}}}
 
 function! s:delete_augroup(name) abort "{{{
@@ -656,6 +661,8 @@ function! s:delete_augroup(name) abort "{{{
     return ret
   endtry
 endfunction "}}}
+
+endif
 
 " vim:set foldmethod=marker:
 " vim:set commentstring="%s:
