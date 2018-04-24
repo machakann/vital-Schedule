@@ -362,6 +362,8 @@ Task.waitfor({triggerlist})    [method]
 	              for {pat} |autocmd-patterns|
 	  * |List|  : Regarded as an |autocmd-events| and a |autocmd-patterns|
 	              like [{event}, {pat}]
+	              If {pat} is a number, it will be translated to
+	              "<buffer={pat}>"
 	  * |Number|: Regarded as a waiting {time} for a timer |timer|
 >
 		let s:Schedule = vital#{pluginname}#new().import('Schedule')
@@ -486,6 +488,8 @@ TaskChain.hook({triggerlist})    [method]
 	              for {pat} |autocmd-patterns|
 	  * |List|  : Regarded as an |autocmd-events| and a |autocmd-patterns|
 	              like [{event}, {pat}]
+	              If {pat} is a number, it will be translated to
+	              "<buffer={pat}>"
 	  * |Number|: Regarded as a waiting {time} for a timer |timer|
 
 	This method returns a `NeatTask` object to be called by either one of

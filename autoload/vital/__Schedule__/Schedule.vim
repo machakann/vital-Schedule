@@ -609,6 +609,9 @@ function! s:_event_and_patterns(eventexpr) abort "{{{
   elseif t_event is v:t_list
     let event = a:eventexpr[0]
     let pat = get(a:eventexpr, 1, '*')
+    if type(pat) is v:t_number
+      let pat = printf('<buffer=%d>', pat)
+    endif
   else
     echoerr s:InvalidTriggers(a:eventexpr)
   endif
