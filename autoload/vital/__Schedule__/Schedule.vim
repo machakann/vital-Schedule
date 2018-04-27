@@ -593,6 +593,7 @@ function! s:TaskChain.cancel() abort "{{{
 
   let [trigger, _] = self._gettrigger()
   call trigger.cancel()
+  call self._tick(self.leftcount())
   return self
 endfunction "}}}
 

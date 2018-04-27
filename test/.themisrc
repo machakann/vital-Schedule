@@ -3,7 +3,7 @@ execute 'set runtimepath+=' . expand('<sfile>:p:h:h')
 set noswapfile
 
 " for local test run
-let p = globpath(&packpath, '/pack/*/start/vital.vim', 0, 1)
+let p = globpath(&packpath, '/pack/*/*/vital.vim', 0, 1)
 if !empty(p)
   let vitalpath = fnamemodify(p[0], ':p')
   execute 'set runtimepath+=' . vitalpath

@@ -375,6 +375,20 @@ Describe [Objects]
       unlet! g:count
       call taskchain.cancel()
     End
+
+    It can stop it by itself
+      let g:result = 'ok'
+      let taskchain = TaskChain('vital-Schedule')
+      call taskchain.hook([50]).call(taskchain.cancel, [], taskchain)
+      call taskchain.hook([50]).execute('let g:result = "fail"')
+      call taskchain.waitfor()
+
+      sleep 110m
+      Assert Equals(g:result, 'ok')
+
+      unlet! g:result
+      call taskchain.cancel()
+    End
   End
 End
 
