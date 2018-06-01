@@ -66,11 +66,9 @@ function! s:_inherit(sub, super) abort "{{{
   call extend(a:sub, a:super, 'keep')
   let a:sub.__SUPER__ = {}
   let a:sub.__SUPER__.__CLASS__ = a:super.__CLASS__
-  for [key, l:Val] in items(a:super)
-    if type(l:Val) is v:t_func || key is# '__SUPER__'
-      let a:sub.__SUPER__[key] = l:Val
-    endif
-  endfor
+  let supermethods = filter(copy(a:super),
+    \ 'type(v:val) is# v:t_func || v:key is# "__SUPER__"')
+  call extend(a:sub.__SUPER__,  supermethods)
   return a:sub
 endfunction "}}}
 
